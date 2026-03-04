@@ -1,0 +1,480 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+/* ─── LOGO SVG COMPONENT ─────────────────────────────────────────────────── */
+function KhichoLogo({ size = "md" }) {
+  const sz = { sm: [28, "18px"], md: [36, "22px"], lg: [52, "32px"] }[size] || [36, "22px"];
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: sz[0] * 0.22 + "px", userSelect: "none" }}>
+      <svg width={sz[0]} height={sz[0]} viewBox="0 0 200 200" fill="none">
+        <defs>
+          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366f1"/><stop offset="50%" stopColor="#a78bfa"/><stop offset="100%" stopColor="#ec4899"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#818cf8"/><stop offset="100%" stopColor="#c084fc"/>
+          </linearGradient>
+        </defs>
+        <path d="M100 14 L172 57 L172 143 L100 186 L28 143 L28 57 Z" fill="#0d0d1f" stroke="url(#lg1)" strokeWidth="2.5"/>
+        <path d="M100 28 L162 64 L162 136 L100 172 L38 136 L38 64 Z" fill="none" stroke="url(#lg2)" strokeWidth="0.7" opacity="0.35"/>
+        <path d="M68 55 L100 100 L55 88 Z" fill="url(#lg1)" opacity="0.9"/>
+        <path d="M132 55 L100 100 L145 88 Z" fill="url(#lg1)" opacity="0.9"/>
+        <path d="M152 100 L100 100 L140 126 Z" fill="url(#lg2)" opacity="0.92"/>
+        <path d="M132 145 L100 100 L145 113 Z" fill="url(#lg1)" opacity="0.8"/>
+        <path d="M68 145 L100 100 L55 113 Z" fill="url(#lg1)" opacity="0.8"/>
+        <path d="M48 100 L100 100 L60 126 Z" fill="url(#lg2)" opacity="0.92"/>
+        <circle cx="100" cy="100" r="19" fill="#06060f"/>
+        <circle cx="100" cy="100" r="11" fill="url(#lg1)"/>
+        <circle cx="100" cy="100" r="5.5" fill="white" opacity="0.95"/>
+        <rect x="72" y="62" width="9" height="76" rx="4.5" fill="url(#lg1)"/>
+        <path d="M81 100 L116 65 L126 75 L94 105 Z" fill="url(#lg1)"/>
+        <path d="M81 100 L116 135 L126 125 L94 95 Z" fill="url(#lg1)"/>
+        <path d="M148 37 L151 48 L162 51 L151 54 L148 65 L145 54 L134 51 L145 48 Z" fill="url(#lg2)" opacity="0.9"/>
+        <circle cx="157" cy="78" r="3.5" fill="#ec4899" opacity="0.85"/>
+        <circle cx="41" cy="128" r="2.5" fill="#60a5fa" opacity="0.7"/>
+      </svg>
+      <span style={{
+        fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: sz[1],
+        background: "linear-gradient(135deg,#fff 0%,#a78bfa 55%,#60a5fa 100%)",
+        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1, letterSpacing: "-0.3px",
+      }}>
+        Khicho<span style={{ WebkitTextFillColor: "#a78bfa" }}>.</span><span style={{ WebkitTextFillColor: "white" }}>AI</span>
+      </span>
+    </div>
+  );
+}
+
+/* ─── CONSTANTS ──────────────────────────────────────────────────────────── */
+const STYLES = [
+  { id:"ghibli",    label:"Ghibli",     icon:"🌿", color:"#4ade80", tag:"studio ghibli anime art style, miyazaki, painterly, lush, dreamy" },
+  { id:"cartoon",   label:"Cartoon",    icon:"🎨", color:"#fb923c", tag:"cartoon style, vibrant colors, bold outlines, animated, playful" },
+  { id:"realistic", label:"Realistic",  icon:"📷", color:"#60a5fa", tag:"hyperrealistic photography, 8k uhd, photorealistic, DSLR, sharp detail" },
+  { id:"anime",     label:"Anime",      icon:"⚡", color:"#f472b6", tag:"anime art style, manga, detailed, cel shading, japanese animation" },
+  { id:"cyberpunk", label:"Cyberpunk",  icon:"🌃", color:"#22d3ee", tag:"cyberpunk aesthetic, neon lights, futuristic city, dark dystopian, rain" },
+  { id:"watercolor",label:"Watercolor", icon:"🎭", color:"#a78bfa", tag:"watercolor painting, soft brushstrokes, artistic, pastel, painterly" },
+  { id:"3d",        label:"3D Render",  icon:"💎", color:"#34d399", tag:"3d render, octane render, cinema4d, glossy, volumetric lighting, ultra detailed" },
+  { id:"oilpaint",  label:"Oil Paint",  icon:"🖼️", color:"#fbbf24", tag:"oil painting, classical art, baroque, rich textures, museum quality" },
+  { id:"pixel",     label:"Pixel Art",  icon:"👾", color:"#f87171", tag:"pixel art, retro game style, 16-bit, pixelated, sprite art" },
+  { id:"fantasy",   label:"Fantasy",    icon:"🐉", color:"#c084fc", tag:"epic fantasy digital art, magical, ethereal glow, DnD concept art" },
+];
+
+const HERO_IMGS = [
+  {p:"dragon flying over misty mountains at sunset, fantasy epic art",s:1001},
+  {p:"girl with glowing lantern in enchanted forest, studio ghibli style",s:1002},
+  {p:"futuristic neon city rain cyberpunk 4k ultra detailed",s:1003},
+  {p:"beautiful anime girl cherry blossom sakura petals",s:1004},
+  {p:"ancient temple overgrown vines golden hour photography",s:1005},
+  {p:"space whale swimming through nebula stars galaxy",s:1006},
+  {p:"elegant woman baroque oil painting dramatic lighting",s:1007},
+  {p:"cute robot exploring flower garden pixar style 3d",s:1008},
+  {p:"underwater mermaid kingdom coral reef fantasy art",s:1009},
+  {p:"wolf howling northern lights aurora borealis forest",s:1010},
+  {p:"samurai warrior cherry blossom petals falling anime",s:1011},
+  {p:"magical witch forest mushroom glowing ethereal",s:1012},
+];
+
+const FEATURES = [
+  {icon:"⚡",title:"Lightning Fast",desc:"Images generated in under 10 seconds with our optimized AI pipeline."},
+  {icon:"🎨",title:"10+ Art Styles",desc:"From Ghibli to Cyberpunk — every aesthetic at your fingertips."},
+  {icon:"🔒",title:"Private & Secure",desc:"Your creations are yours. We never train on your images."},
+  {icon:"📥",title:"Instant Download",desc:"Download in full quality with one click. No watermarks, ever."},
+  {icon:"∞",title:"Unlimited Creates",desc:"No daily caps. Generate as many images as your imagination demands."},
+  {icon:"🌐",title:"Web & Mobile",desc:"Works beautifully on any device, anywhere in the world."},
+];
+
+const SUGGESTIONS = [
+  "A girl walking through a forest in the rain",
+  "A futuristic city floating in clouds",
+  "A samurai at sunset in cherry blossoms",
+  "A dragon guarding a mountain treasure",
+  "A cozy café in autumn with warm lights",
+  "Underwater kingdom glowing bioluminescence",
+];
+
+const buildUrl = (p, s, w=512, h=512) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(p+", high quality, detailed, masterpiece")}?width=${w}&height=${h}&seed=${s||Math.random()*999999|0}&nologo=true&enhance=true`;
+
+/* ─── HELPERS ────────────────────────────────────────────────────────────── */
+function GlowOrb({top,left,right,bottom,size,color,delay="0s"}) {
+  return <div aria-hidden style={{position:"fixed",top,left,right,bottom,width:size,height:size,borderRadius:"50%",background:`radial-gradient(circle,${color} 0%,transparent 70%)`,pointerEvents:"none",zIndex:0,animation:"orbFloat 12s ease-in-out infinite",animationDelay:delay}} />;
+}
+
+function LazyImg({src,alt,style:s}) {
+  const [ok,setOk]=useState(false);
+  return (
+    <div style={{position:"relative",overflow:"hidden",...s}}>
+      {!ok && <div style={{position:"absolute",inset:0,background:"linear-gradient(110deg,#0d0d1f 30%,#1a1a3e 50%,#0d0d1f 70%)",backgroundSize:"200% 100%",animation:"shimmer 1.5s infinite"}}/>}
+      <img src={src} alt={alt} onLoad={()=>setOk(true)} style={{width:"100%",height:"100%",objectFit:"cover",opacity:ok?1:0,transition:"opacity 0.6s",display:"block"}}/>
+    </div>
+  );
+}
+
+function ImageCard({item,onDelete}) {
+  const [ok,setOk]=useState(false);
+  const [hov,setHov]=useState(false);
+  const s=STYLES.find(x=>x.id===item.style);
+  const dl=async()=>{try{const r=await fetch(item.url);const b=await r.blob();const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`khicho-${item.id}.jpg`;a.click();URL.revokeObjectURL(u);}catch{window.open(item.url,"_blank");}};
+  return (
+    <article onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{borderRadius:"16px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.07)",background:"#0d0d1f",transform:hov?"translateY(-5px) scale(1.01)":"translateY(0) scale(1)",boxShadow:hov?"0 24px 60px rgba(0,0,0,0.55),0 0 40px rgba(99,102,241,0.18)":"0 4px 20px rgba(0,0,0,0.3)",transition:"all 0.35s cubic-bezier(0.23,1,0.32,1)",animation:"fadeSlideUp 0.5s ease forwards"}}>
+      <div style={{aspectRatio:"1",position:"relative"}}>
+        {!ok&&<div style={{position:"absolute",inset:0,background:"linear-gradient(110deg,#0d0d1f 30%,#1a1a3e 50%,#0d0d1f 70%)",backgroundSize:"200% 100%",animation:"shimmer 1.5s infinite",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:"30px",height:"30px",border:"2.5px solid rgba(99,102,241,0.25)",borderTopColor:"#6366f1",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/></div>}
+        <img src={item.url} alt={item.prompt} onLoad={()=>setOk(true)} style={{width:"100%",height:"100%",objectFit:"cover",opacity:ok?1:0,transition:"opacity 0.5s ease, transform 0.4s ease",transform:hov&&ok?"scale(1.05)":"scale(1)",display:"block"}}/>
+        {ok&&hov&&<div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.35) 45%,transparent 100%)",display:"flex",flexDirection:"column",justifyContent:"flex-end",padding:"14px",animation:"fadeIn 0.2s ease"}}>
+          <p style={{color:"rgba(255,255,255,0.8)",fontSize:"11px",margin:"0 0 10px",fontFamily:"monospace",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{item.prompt}</p>
+          <div style={{display:"flex",gap:"6px"}}>
+            <button onClick={dl} style={{flex:1,padding:"8px",background:"rgba(99,102,241,0.85)",border:"none",borderRadius:"9px",color:"white",cursor:"pointer",fontSize:"12px",fontWeight:"600"}}>⬇ Download</button>
+            <button onClick={()=>window.open(item.url,"_blank")} style={{padding:"8px 12px",background:"rgba(255,255,255,0.1)",border:"none",borderRadius:"9px",color:"white",cursor:"pointer",fontSize:"13px"}}>↗</button>
+            {onDelete&&<button onClick={()=>onDelete(item.id)} style={{padding:"8px 11px",background:"rgba(239,68,68,0.2)",border:"none",borderRadius:"9px",color:"#f87171",cursor:"pointer",fontSize:"13px"}}>✕</button>}
+          </div>
+        </div>}
+      </div>
+      <div style={{padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:"4px",background:"rgba(99,102,241,0.12)",color:"#a78bfa",fontSize:"10px",padding:"3px 10px",borderRadius:"100px",fontFamily:"monospace",border:"1px solid rgba(99,102,241,0.2)"}}>{s?.icon} {s?.label}</span>
+        <span style={{color:"rgba(255,255,255,0.2)",fontSize:"10px",fontFamily:"monospace"}}>{new Date(item.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+      </div>
+    </article>
+  );
+}
+
+const inp = {width:"100%",padding:"13px 16px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:"12px",color:"white",fontSize:"14px",fontFamily:"inherit",transition:"border-color 0.2s,box-shadow 0.2s",outline:"none"};
+const onFocus = e=>{e.target.style.borderColor="rgba(167,139,250,0.6)";e.target.style.boxShadow="0 0 0 3px rgba(99,102,241,0.1)";};
+const onBlur  = e=>{e.target.style.borderColor="rgba(255,255,255,0.09)";e.target.style.boxShadow="none";};
+
+/* ─── AUTH MODAL ─────────────────────────────────────────────────────────── */
+function AuthModal({mode,onClose,onSuccess}) {
+  const [tab,setTab]=useState(mode);
+  const [form,setForm]=useState({name:"",email:"",password:""});
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+
+  const submit=async()=>{
+    if(!form.email||!form.password)return setError("Please fill all required fields");
+    if(tab==="signup"&&!form.name)return setError("Please enter your name");
+    setError("");setLoading(true);
+    await new Promise(r=>setTimeout(r,1300));
+    setLoading(false);
+    onSuccess?.({name:form.name||form.email.split("@")[0],email:form.email});
+  };
+  const social=async p=>{setLoading(true);await new Promise(r=>setTimeout(r,900));setLoading(false);onSuccess?.({name:p==="google"?"Google User":"GitHub User",email:`user@${p}.com`});};
+
+  return (
+    <div role="dialog" style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.82)",backdropFilter:"blur(16px)",animation:"fadeIn 0.2s ease"}} onClick={e=>e.target===e.currentTarget&&onClose?.()}>
+      <div style={{width:"min(448px,95vw)",background:"rgba(10,10,22,0.98)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"28px",padding:"40px 36px",position:"relative",boxShadow:"0 40px 80px rgba(0,0,0,0.65)",animation:"slideUp 0.3s cubic-bezier(0.23,1,0.32,1)"}}>
+        <button onClick={onClose} style={{position:"absolute",top:"18px",right:"18px",background:"rgba(255,255,255,0.06)",border:"none",color:"rgba(255,255,255,0.5)",width:"32px",height:"32px",borderRadius:"8px",cursor:"pointer",fontSize:"16px"}}>✕</button>
+        <div style={{textAlign:"center",marginBottom:"28px"}}>
+          <KhichoLogo size="md"/>
+          <p style={{color:"rgba(255,255,255,0.35)",fontSize:"13px",marginTop:"10px",fontFamily:"monospace"}}>{tab==="login"?"Welcome back, creator ✦":"Start creating for free ✦"}</p>
+        </div>
+        <div style={{display:"flex",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"4px",marginBottom:"24px",border:"1px solid rgba(255,255,255,0.06)"}}>
+          {[["login","Sign In"],["signup","Sign Up"]].map(([t,l])=>(
+            <button key={t} onClick={()=>{setTab(t);setError("");}} style={{flex:1,padding:"10px",border:"none",borderRadius:"9px",cursor:"pointer",fontWeight:"600",fontSize:"14px",transition:"all 0.2s",background:tab===t?"rgba(99,102,241,0.3)":"transparent",color:tab===t?"#a78bfa":"rgba(255,255,255,0.4)"}}>{l}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:"10px",marginBottom:"20px"}}>
+          {[{id:"google",icon:"G",l:"Google",bg:"rgba(234,67,53,0.1)",br:"rgba(234,67,53,0.2)",c:"#f87171"},{id:"github",icon:"⊞",l:"GitHub",bg:"rgba(255,255,255,0.04)",br:"rgba(255,255,255,0.1)",c:"rgba(255,255,255,0.65)"}].map(b=>(
+            <button key={b.id} onClick={()=>social(b.id)} disabled={loading} style={{flex:1,padding:"11px",background:b.bg,border:`1px solid ${b.br}`,borderRadius:"12px",color:b.c,cursor:"pointer",fontSize:"13px",fontWeight:"600",display:"flex",alignItems:"center",justifyContent:"center",gap:"7px",transition:"opacity 0.2s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.75"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+              <span style={{fontWeight:"800",fontSize:"15px"}}>{b.icon}</span> {b.l}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"20px"}}>
+          <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.07)"}}/>
+          <span style={{color:"rgba(255,255,255,0.2)",fontSize:"11px",fontFamily:"monospace"}}>or email</span>
+          <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.07)"}}/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+          {tab==="signup"&&<input placeholder="Full Name" value={form.name} onChange={set("name")} style={inp} onFocus={onFocus} onBlur={onBlur}/>}
+          <input placeholder="Email address" type="email" value={form.email} onChange={set("email")} style={inp} onFocus={onFocus} onBlur={onBlur}/>
+          <input placeholder="Password" type="password" value={form.password} onChange={set("password")} style={inp} onFocus={onFocus} onBlur={onBlur} onKeyDown={e=>e.key==="Enter"&&submit()}/>
+        </div>
+        {error&&<p style={{color:"#f87171",fontSize:"12px",marginTop:"10px",textAlign:"center",fontFamily:"monospace"}}>⚠ {error}</p>}
+        {tab==="login"&&<div style={{textAlign:"right",marginTop:"8px"}}><span style={{color:"#a78bfa",fontSize:"12px",cursor:"pointer",fontFamily:"monospace"}}>Forgot password?</span></div>}
+        <button onClick={submit} disabled={loading} style={{width:"100%",marginTop:"20px",padding:"15px",background:loading?"rgba(99,102,241,0.3)":"linear-gradient(135deg,#6366f1 0%,#a78bfa 60%,#60a5fa 100%)",border:"none",borderRadius:"14px",color:loading?"rgba(255,255,255,0.4)":"white",fontSize:"15px",fontWeight:"700",cursor:loading?"not-allowed":"pointer",fontFamily:"'Playfair Display',serif",boxShadow:loading?"none":"0 8px 30px rgba(99,102,241,0.4)",transition:"all 0.2s"}} onMouseEnter={e=>{if(!loading)e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+          {loading?"✦ Authenticating...":tab==="login"?"✦ Sign In":"✦ Create Account — Free"}
+        </button>
+        <p style={{textAlign:"center",marginTop:"14px",color:"rgba(255,255,255,0.2)",fontSize:"11px",fontFamily:"monospace"}}>By continuing you agree to our <span style={{color:"#a78bfa",cursor:"pointer"}}>Terms</span> & <span style={{color:"#a78bfa",cursor:"pointer"}}>Privacy</span></p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── LANDING ────────────────────────────────────────────────────────────── */
+function Landing({onLogin,onSignup}) {
+  const [sc,setSc]=useState(false);
+  useEffect(()=>{const fn=()=>setSc(window.scrollY>50);window.addEventListener("scroll",fn,{passive:true});return()=>window.removeEventListener("scroll",fn);},[]);
+  const pbtn={padding:"15px 36px",background:"linear-gradient(135deg,#6366f1 0%,#a78bfa 100%)",border:"none",borderRadius:"14px",color:"white",fontSize:"15px",fontWeight:"700",cursor:"pointer",fontFamily:"'Playfair Display',serif",boxShadow:"0 8px 40px rgba(99,102,241,0.4)",transition:"all 0.25s"};
+  const gbtn={padding:"15px 30px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",color:"rgba(255,255,255,0.7)",fontSize:"14px",cursor:"pointer",transition:"all 0.2s"};
+
+  return (
+    <div style={{background:"#06060f",color:"white",minHeight:"100vh",position:"relative",overflowX:"hidden"}}>
+      <GlowOrb top="-120px" left="-120px" size="550px" color="rgba(99,102,241,0.12)" delay="0s"/>
+      <GlowOrb top="38%" left="62%" size="450px" color="rgba(167,139,250,0.07)" delay="4s"/>
+      <GlowOrb top="72%" left="-60px" size="380px" color="rgba(96,165,250,0.06)" delay="7s"/>
+
+      {/* NAV */}
+      <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,height:"66px",padding:"0 5%",display:"flex",alignItems:"center",justifyContent:"space-between",background:sc?"rgba(6,6,15,0.88)":"transparent",backdropFilter:sc?"blur(20px)":"none",borderBottom:sc?"1px solid rgba(255,255,255,0.06)":"none",transition:"all 0.4s ease"}}>
+        <KhichoLogo size="md"/>
+        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+          <button onClick={onLogin} style={{padding:"9px 24px",background:"transparent",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"100px",color:"rgba(255,255,255,0.7)",cursor:"pointer",fontSize:"13px",fontWeight:"500",transition:"all 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(167,139,250,0.5)";e.currentTarget.style.color="white";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.12)";e.currentTarget.style.color="rgba(255,255,255,0.7)";}}>Sign In</button>
+          <button onClick={onSignup} style={{padding:"9px 24px",background:"linear-gradient(135deg,#6366f1,#a78bfa)",border:"none",borderRadius:"100px",color:"white",cursor:"pointer",fontSize:"13px",fontWeight:"600",boxShadow:"0 4px 20px rgba(99,102,241,0.35)",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>Start Free ✦</button>
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"110px 5% 60px",position:"relative",zIndex:1}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:"8px",background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.25)",borderRadius:"100px",padding:"8px 20px",marginBottom:"30px",color:"#a78bfa",fontSize:"12px",fontFamily:"monospace",animation:"fadeSlideUp 0.6s ease both"}}>
+          <span style={{width:"7px",height:"7px",background:"#6366f1",borderRadius:"50%",boxShadow:"0 0 10px #6366f1",display:"inline-block",animation:"pulseGlow 2s infinite"}}/>
+          India's Most Powerful AI Image Generator
+        </div>
+        <h1 style={{fontFamily:"'Playfair Display',serif",fontWeight:700,fontSize:"clamp(46px,7.5vw,92px)",lineHeight:1.04,margin:"0 0 20px",textAlign:"center",letterSpacing:"-1.5px",animation:"fadeSlideUp 0.7s ease 0.1s both"}}>
+          <span style={{color:"white"}}>Imagine It.</span><br/>
+          <span style={{background:"linear-gradient(135deg,#a78bfa 0%,#60a5fa 50%,#f0abfc 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Khicho It.</span>
+        </h1>
+        <p style={{color:"rgba(255,255,255,0.45)",textAlign:"center",fontSize:"clamp(15px,2.5vw,19px)",maxWidth:"560px",margin:"0 auto 40px",lineHeight:1.75,animation:"fadeSlideUp 0.7s ease 0.2s both"}}>
+          Turn your words into stunning AI art in seconds. Ghibli, Anime, Realistic, Cyberpunk — every style, zero limits.
+        </p>
+        <div style={{display:"flex",gap:"12px",justifyContent:"center",flexWrap:"wrap",animation:"fadeSlideUp 0.7s ease 0.3s both"}}>
+          <button onClick={onSignup} style={pbtn} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 14px 50px rgba(99,102,241,0.55)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 8px 40px rgba(99,102,241,0.4)";}}>✦ Start Creating — Free</button>
+          <button onClick={onLogin} style={gbtn} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(167,139,250,0.4)";e.currentTarget.style.color="white";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.1)";e.currentTarget.style.color="rgba(255,255,255,0.7)";}}>Sign In →</button>
+        </div>
+        <p style={{color:"rgba(255,255,255,0.2)",fontSize:"11px",marginTop:"14px",fontFamily:"monospace",animation:"fadeSlideUp 0.7s ease 0.4s both"}}>No credit card required • Free forever plan</p>
+
+        {/* MOSAIC */}
+        <div style={{marginTop:"70px",width:"100%",maxWidth:"1100px",display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:"10px",animation:"fadeSlideUp 0.8s ease 0.35s both"}}>
+          {HERO_IMGS.map((item,i)=>(
+            <div key={i} style={{gridColumn:i<2?"span 2":"span 1",aspectRatio:i<2?"1.2":"1",borderRadius:"14px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.07)",boxShadow:"0 10px 40px rgba(0,0,0,0.45)",animation:`fadeSlideUp 0.5s ease ${0.07*i}s both`}}>
+              <LazyImg src={buildUrl(item.p,item.s,i<2?600:400,i<2?480:400)} alt={item.p} style={{width:"100%",height:"100%"}}/>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section style={{position:"relative",zIndex:1,padding:"0 5% 80px"}}>
+        <div style={{maxWidth:"860px",margin:"0 auto",display:"flex",borderTop:"1px solid rgba(255,255,255,0.05)",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+          {[{n:"2M+",l:"Images Created"},{n:"150K+",l:"Happy Creators"},{n:"10",l:"Art Styles"},{n:"< 10s",l:"Generation Time"}].map((s,i)=>(
+            <div key={i} style={{flex:1,textAlign:"center",padding:"34px 20px",borderRight:i<3?"1px solid rgba(255,255,255,0.05)":"none"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(26px,4vw,42px)",fontWeight:700,background:"linear-gradient(135deg,#a78bfa,#60a5fa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{s.n}</div>
+              <div style={{color:"rgba(255,255,255,0.32)",fontSize:"12px",marginTop:"4px",fontFamily:"monospace"}}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section style={{padding:"0 5% 100px",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:"1060px",margin:"0 auto"}}>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(30px,5vw,54px)",fontWeight:700,textAlign:"center",marginBottom:"14px"}}>
+            <span style={{color:"white"}}>Why creators choose </span>
+            <span style={{background:"linear-gradient(135deg,#a78bfa,#60a5fa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Khicho.AI</span>
+          </h2>
+          <p style={{textAlign:"center",color:"rgba(255,255,255,0.3)",marginBottom:"52px",fontSize:"15px"}}>Built for artists, dreamers, and creators across India & beyond</p>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"16px"}}>
+            {FEATURES.map((f,i)=>(
+              <div key={i} style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:"22px",padding:"30px 26px",transition:"all 0.3s cubic-bezier(0.23,1,0.32,1)",animation:`fadeSlideUp 0.5s ease ${0.08*i}s both`}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(167,139,250,0.3)";e.currentTarget.style.background="rgba(99,102,241,0.05)";e.currentTarget.style.transform="translateY(-4px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";e.currentTarget.style.background="rgba(255,255,255,0.02)";e.currentTarget.style.transform="translateY(0)";}}>
+                <div style={{fontSize:"30px",marginBottom:"16px"}}>{f.icon}</div>
+                <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"19px",margin:"0 0 10px",color:"white"}}>{f.title}</h3>
+                <p style={{color:"rgba(255,255,255,0.4)",fontSize:"13px",margin:0,lineHeight:1.75}}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{padding:"0 5% 100px",position:"relative",zIndex:1}}>
+        <div style={{maxWidth:"820px",margin:"0 auto",textAlign:"center",padding:"64px 40px",background:"linear-gradient(135deg,rgba(99,102,241,0.09),rgba(167,139,250,0.04))",border:"1px solid rgba(99,102,241,0.22)",borderRadius:"32px",boxShadow:"0 0 100px rgba(99,102,241,0.07)"}}>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(28px,4.5vw,52px)",fontWeight:700,margin:"0 0 14px"}}>
+            Ready to <span style={{background:"linear-gradient(135deg,#a78bfa,#60a5fa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Khicho</span>?
+          </h2>
+          <p style={{color:"rgba(255,255,255,0.4)",marginBottom:"30px",fontSize:"15px"}}>Join 150,000+ creators already making magic with AI</p>
+          <button onClick={onSignup} style={pbtn} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.04)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>✦ Get Started Free</button>
+        </div>
+      </section>
+
+      <footer style={{borderTop:"1px solid rgba(255,255,255,0.05)",padding:"28px 5%",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"12px",position:"relative",zIndex:1}}>
+        <KhichoLogo size="sm"/>
+        <p style={{color:"rgba(255,255,255,0.2)",fontSize:"12px",fontFamily:"monospace"}}>© 2025 Khicho.AI — Made with 💜 in India</p>
+        <div style={{display:"flex",gap:"20px"}}>
+          {["Privacy","Terms","Contact"].map(l=><span key={l} style={{color:"rgba(255,255,255,0.3)",fontSize:"12px",cursor:"pointer",fontFamily:"monospace",transition:"color 0.2s"}} onMouseEnter={e=>e.currentTarget.style.color="#a78bfa"} onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.3)"}>{l}</span>)}
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+/* ─── DASHBOARD ──────────────────────────────────────────────────────────── */
+function Dashboard({user,onLogout}) {
+  const [prompt,setPrompt]=useState("");
+  const [style,setStyle]=useState("ghibli");
+  const [count,setCount]=useState(1);
+  const [images,setImages]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const [tab,setTab]=useState("create");
+  const galleryRef=useRef(null);
+  const textRef=useRef(null);
+
+  const generate=useCallback(async()=>{
+    const t=prompt.trim();
+    if(!t)return setError("Please enter a prompt");
+    if(t.length<3)return setError("Prompt too short — describe more");
+    if(loading)return;
+    setError("");setLoading(true);
+    const s=STYLES.find(x=>x.id===style);
+    await new Promise(r=>setTimeout(r,300));
+    const newImgs=Array.from({length:count},(_,i)=>({
+      id:`${Date.now()}-${i}`,prompt:t,style,
+      url:buildUrl(`${t}, ${s.tag}`,Math.random()*999999|0),
+      createdAt:new Date().toISOString(),
+    }));
+    setImages(p=>[...newImgs,...p]);setLoading(false);
+    setTimeout(()=>galleryRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),200);
+  },[prompt,style,count,loading]);
+
+  const del=useCallback(id=>setImages(p=>p.filter(x=>x.id!==id)),[]);
+  const sel=STYLES.find(s=>s.id===style);
+
+  return (
+    <div style={{background:"#06060f",minHeight:"100vh",color:"white",display:"flex",flexDirection:"column"}}>
+      <GlowOrb top="-100px" left="-100px" size="450px" color="rgba(99,102,241,0.1)"/>
+      <GlowOrb top="50%" left="70%" size="350px" color="rgba(167,139,250,0.07)" delay="5s"/>
+
+      <header style={{height:"62px",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 24px",background:"rgba(6,6,15,0.92)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:50}}>
+        <KhichoLogo size="sm"/>
+        <div style={{display:"flex",gap:"3px",background:"rgba(255,255,255,0.04)",borderRadius:"12px",padding:"3px",border:"1px solid rgba(255,255,255,0.05)"}}>
+          {[["create","✦ Create"],["gallery","🖼 Gallery"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{padding:"7px 20px",border:"none",borderRadius:"9px",cursor:"pointer",fontSize:"13px",fontWeight:"600",transition:"all 0.2s",background:tab===id?"rgba(99,102,241,0.3)":"transparent",color:tab===id?"#a78bfa":"rgba(255,255,255,0.4)",display:"flex",alignItems:"center",gap:"6px"}}>
+              {label}
+              {id==="gallery"&&images.length>0&&<span style={{background:"#6366f1",color:"white",fontSize:"10px",padding:"1px 6px",borderRadius:"100px",fontFamily:"monospace"}}>{images.length}</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+          <div style={{background:"rgba(255,255,255,0.05)",borderRadius:"10px",padding:"5px 12px 5px 5px",display:"flex",alignItems:"center",gap:"8px",border:"1px solid rgba(255,255,255,0.07)"}}>
+            <div style={{width:"30px",height:"30px",borderRadius:"8px",background:"linear-gradient(135deg,#6366f1,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"800",color:"white",flexShrink:0}}>{user.name[0].toUpperCase()}</div>
+            <div><div style={{fontSize:"12px",fontWeight:"600",color:"rgba(255,255,255,0.85)",lineHeight:1.2}}>{user.name}</div><div style={{fontSize:"10px",color:"rgba(255,255,255,0.3)",fontFamily:"monospace",textTransform:"uppercase"}}>Free Plan</div></div>
+          </div>
+          <button onClick={onLogout} style={{padding:"8px 14px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"10px",color:"rgba(255,255,255,0.4)",cursor:"pointer",fontSize:"12px",transition:"all 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(239,68,68,0.4)";e.currentTarget.style.color="#f87171";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.08)";e.currentTarget.style.color="rgba(255,255,255,0.4)";}}>Logout</button>
+        </div>
+      </header>
+
+      <main style={{flex:1,padding:"28px 24px",maxWidth:"1280px",width:"100%",margin:"0 auto",boxSizing:"border-box"}}>
+        {tab==="create"&&(
+          <div style={{display:"grid",gridTemplateColumns:"360px 1fr",gap:"24px",alignItems:"start"}}>
+            {/* SIDEBAR */}
+            <aside style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:"24px",padding:"24px",position:"sticky",top:"82px",animation:"fadeSlideUp 0.4s ease both"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"20px"}}>
+                <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"18px",margin:0}}>✦ New Image</h2>
+                <div style={{background:"rgba(99,102,241,0.15)",color:"#a78bfa",fontSize:"10px",padding:"3px 10px",borderRadius:"100px",fontFamily:"monospace",border:"1px solid rgba(99,102,241,0.2)"}}>{sel?.icon} {sel?.label}</div>
+              </div>
+              <label style={{color:"rgba(255,255,255,0.35)",fontSize:"11px",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:"1.2px",display:"block",marginBottom:"8px"}}>Prompt</label>
+              <textarea ref={textRef} value={prompt} onChange={e=>{setPrompt(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&(e.preventDefault(),generate())} placeholder="Describe your image... e.g. 'A samurai warrior in cherry blossom field at sunset, dramatic lighting'" rows={5} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",color:"white",fontSize:"13px",padding:"14px 16px",resize:"none",fontFamily:"monospace",outline:"none",lineHeight:1.65,boxSizing:"border-box",transition:"border-color 0.2s,box-shadow 0.2s"}} onFocus={onFocus} onBlur={onBlur}/>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:"4px"}}>
+                <div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>
+                  {SUGGESTIONS.slice(0,3).map((s,i)=><button key={i} onClick={()=>{setPrompt(s);textRef.current?.focus();}} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.35)",padding:"3px 8px",borderRadius:"100px",cursor:"pointer",fontSize:"9px",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.color="#a78bfa";e.currentTarget.style.borderColor="rgba(167,139,250,0.3)";}} onMouseLeave={e=>{e.currentTarget.style.color="rgba(255,255,255,0.35)";e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";}}>{s.slice(0,22)}...</button>)}
+                </div>
+                <span style={{color:prompt.length>450?"#f87171":"rgba(255,255,255,0.2)",fontSize:"10px",fontFamily:"monospace",flexShrink:0}}>{prompt.length}/500</span>
+              </div>
+              <label style={{color:"rgba(255,255,255,0.35)",fontSize:"11px",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:"1.2px",display:"block",margin:"16px 0 10px"}}>Art Style</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px"}}>
+                {STYLES.map(s=><button key={s.id} onClick={()=>setStyle(s.id)} style={{padding:"10px 12px",border:`1px solid ${style===s.id?"rgba(99,102,241,0.55)":"rgba(255,255,255,0.07)"}`,borderRadius:"12px",cursor:"pointer",background:style===s.id?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.02)",color:style===s.id?"#a78bfa":"rgba(255,255,255,0.5)",transition:"all 0.15s",textAlign:"left",display:"flex",alignItems:"center",gap:"7px",fontSize:"12px",fontWeight:"500"}}>{s.icon} {s.label}</button>)}
+              </div>
+              <label style={{color:"rgba(255,255,255,0.35)",fontSize:"11px",fontFamily:"monospace",textTransform:"uppercase",letterSpacing:"1.2px",display:"block",margin:"16px 0 10px"}}>Quantity</label>
+              <div style={{display:"flex",gap:"8px"}}>
+                {[1,2,4].map(n=><button key={n} onClick={()=>setCount(n)} style={{flex:1,padding:"11px",border:`1px solid ${count===n?"rgba(99,102,241,0.55)":"rgba(255,255,255,0.07)"}`,borderRadius:"12px",background:count===n?"rgba(99,102,241,0.15)":"rgba(255,255,255,0.02)",color:count===n?"#a78bfa":"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:"15px",fontWeight:"700",transition:"all 0.15s",fontFamily:"'Playfair Display',serif"}}>{n}</button>)}
+              </div>
+              {error&&<p style={{color:"#f87171",fontSize:"12px",marginTop:"12px",fontFamily:"monospace",textAlign:"center"}}>⚠ {error}</p>}
+              <button onClick={generate} disabled={loading} style={{width:"100%",marginTop:"20px",padding:"16px",background:loading?"rgba(99,102,241,0.25)":"linear-gradient(135deg,#6366f1 0%,#a78bfa 60%,#60a5fa 100%)",border:"none",borderRadius:"14px",color:loading?"rgba(255,255,255,0.4)":"white",fontSize:"15px",fontWeight:"700",cursor:loading?"not-allowed":"pointer",fontFamily:"'Playfair Display',serif",boxShadow:loading?"none":"0 8px 32px rgba(99,102,241,0.38)",transition:"all 0.2s"}} onMouseEnter={e=>{if(!loading)e.currentTarget.style.transform="translateY(-1px)";}} onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+                {loading?<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}><span style={{width:"14px",height:"14px",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"white",borderRadius:"50%",animation:"spin 0.7s linear infinite",display:"inline-block"}}/>Generating...</span>:"✦ Generate Image"}
+              </button>
+            </aside>
+
+            {/* OUTPUT */}
+            <div ref={galleryRef} style={{minWidth:0}}>
+              {images.length===0?(
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"450px",border:"2px dashed rgba(255,255,255,0.06)",borderRadius:"24px",color:"rgba(255,255,255,0.2)",gap:"14px",animation:"fadeIn 0.4s ease both"}}>
+                  <div style={{fontSize:"56px",opacity:0.25}}>✦</div>
+                  <p style={{fontFamily:"'Playfair Display',serif",fontSize:"20px",margin:0}}>Your creations appear here</p>
+                  <p style={{fontSize:"12px",margin:0,fontFamily:"monospace",opacity:0.6}}>Write a prompt and press Generate</p>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:"8px",justifyContent:"center",maxWidth:"500px",marginTop:"8px"}}>
+                    {SUGGESTIONS.map((s,i)=><button key={i} onClick={()=>{setPrompt(s);textRef.current?.focus();}} style={{background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.2)",color:"#a78bfa",padding:"7px 14px",borderRadius:"100px",cursor:"pointer",fontSize:"12px",fontFamily:"monospace",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(99,102,241,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(99,102,241,0.1)"}>{s}</button>)}
+                  </div>
+                </div>
+              ):(
+                <div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"16px"}}>
+                    <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:"16px",margin:0,color:"rgba(255,255,255,0.7)"}}>Latest Results <span style={{color:"#6366f1",fontSize:"13px",fontFamily:"monospace"}}>({images.length})</span></h3>
+                    <button onClick={()=>setImages([])} style={{padding:"6px 14px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.18)",borderRadius:"8px",color:"#f87171",cursor:"pointer",fontSize:"11px",fontFamily:"monospace"}}>Clear</button>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:"14px"}}>
+                    {images.map(img=><ImageCard key={img.id} item={img} onDelete={del}/>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab==="gallery"&&(
+          <div style={{animation:"fadeSlideUp 0.4s ease both"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"28px"}}>
+              <div>
+                <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"28px",margin:"0 0 4px"}}>Your Gallery</h2>
+                <p style={{color:"rgba(255,255,255,0.3)",fontSize:"12px",fontFamily:"monospace",margin:0}}>{images.length} creation{images.length!==1?"s":""}</p>
+              </div>
+              {images.length>0&&<button onClick={()=>{if(window.confirm("Clear all images?"))setImages([]);}} style={{padding:"10px 20px",background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:"12px",color:"#f87171",cursor:"pointer",fontSize:"13px"}}>🗑 Clear All</button>}
+            </div>
+            {images.length===0?(
+              <div style={{textAlign:"center",padding:"100px 20px",color:"rgba(255,255,255,0.2)"}}>
+                <div style={{fontSize:"64px",marginBottom:"20px"}}>🖼</div>
+                <p style={{fontFamily:"'Playfair Display',serif",fontSize:"22px",marginBottom:"20px"}}>No creations yet</p>
+                <button onClick={()=>setTab("create")} style={{padding:"14px 32px",background:"linear-gradient(135deg,#6366f1,#a78bfa)",border:"none",borderRadius:"14px",color:"white",cursor:"pointer",fontSize:"15px",fontWeight:"700",fontFamily:"'Playfair Display',serif"}}>✦ Create Your First Image</button>
+              </div>
+            ):(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))",gap:"16px"}}>
+                {images.map(img=><ImageCard key={img.id} item={img} onDelete={del}/>)}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* ─── APP ROOT ───────────────────────────────────────────────────────────── */
+export default function App() {
+  const [page,setPage]=useState("landing");
+  const [modal,setModal]=useState(null);
+  const [user,setUser]=useState(null);
+
+  const onAuth=u=>{setUser(u);setModal(null);setPage("dashboard");};
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        html,body{background:#06060f;}
+        ::-webkit-scrollbar{width:4px;}
+        ::-webkit-scrollbar-track{background:#06060f;}
+        ::-webkit-scrollbar-thumb{background:#6366f1;border-radius:4px;}
+        input,textarea{font-family:'DM Mono',monospace;color:white;}
+        input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2);}
+        ::selection{background:rgba(99,102,241,0.35);color:white;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px) scale(0.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+        @keyframes fadeSlideUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes shimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+        @keyframes orbFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-28px) scale(1.06);}}
+        @keyframes pulseGlow{0%,100%{opacity:1;box-shadow:0 0 8px #6366f1,0 0 20px rgba(99,102,241,0.4);}50%{opacity:0.35;box-shadow:none;}}
+      `}</style>
+
+      {page==="landing"&&<Landing onLogin={()=>setModal("login")} onSignup={()=>setModal("signup")}/>}
+      {page==="dashboard"&&user&&<Dashboard user={user} onLogout={()=>{setUser(null);setPage("landing");}}/>}
+      {modal&&<AuthModal mode={modal} onClose={()=>setModal(null)} onSuccess={onAuth}/>}
+    </>
+  );
+}
