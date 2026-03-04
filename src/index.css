@@ -123,6 +123,13 @@ textarea:focus {
   50% { border-color: rgba(167, 139, 250, 0.6); }
 }
 
+/* ─── NEW — ImageCard generating state progress bar ────────────────────────── */
+@keyframes progressBar {
+  0%   { width: 0%;  margin-left: 0%; }
+  50%  { width: 70%; margin-left: 15%; }
+  100% { width: 0%;  margin-left: 100%; }
+}
+
 /* ─── UTILITY CLASSES ───────────────────────────────────────────────────────── */
 
 .font-display {
@@ -166,12 +173,10 @@ textarea:focus {
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  /* Dashboard sidebar collapses on mobile */
   .dashboard-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* Hero grid becomes 3 columns on mobile */
   .hero-grid {
     grid-template-columns: repeat(3, 1fr) !important;
   }
@@ -181,7 +186,6 @@ textarea:focus {
     aspect-ratio: 1 !important;
   }
 
-  /* Stats wrap */
   .stats-row {
     flex-wrap: wrap;
   }
