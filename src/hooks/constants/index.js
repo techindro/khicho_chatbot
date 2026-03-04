@@ -134,7 +134,7 @@ export const FEATURES = [
 
 // ─── STATS ────────────────────────────────────────────────────────────────────
 export const STATS = [
-  { n: "2M+", l: "Images Created" },
+  { n: "10+", l: "Images Created" },
   { n: "150K+", l: "Happy Creators" },
   { n: "10", l: "Art Styles" },
   { n: "< 10s", l: "Generation Time" },
