@@ -24,5 +24,5 @@
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/khicho-chatbot.git
+git clone https://github.com/techindro/khicho_chatbot.git
 cd khicho-chatbot
