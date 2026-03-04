@@ -4,18 +4,12 @@ import Dashboard from "@pages/Dashboard";
 import AuthModal from "@components/AuthModal";
 import "./index.css";
 
-/**
- * App — Root component managing routing and auth state
- *
- * Page flow:
- *   landing → (auth modal) → dashboard
- *
- * To add real routing, replace this with <BrowserRouter> + <Routes>
- * and use React Router's <Route> components.
- */
+// 👇 STEP 1 — Apna token yahan paste karo
+const HF_TOKEN = "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";
+
 export default function App() {
-  const [page, setPage] = useState("landing"); // "landing" | "dashboard"
-  const [authModal, setAuthModal] = useState(null); // null | "login" | "signup"
+  const [page, setPage] = useState("landing");
+  const [authModal, setAuthModal] = useState(null);
   const [user, setUser] = useState(null);
 
   const handleAuthSuccess = (userData) => {
@@ -37,14 +31,13 @@ export default function App() {
           onSignup={() => setAuthModal("signup")}
         />
       )}
-
       {page === "dashboard" && user && (
         <Dashboard
           user={user}
+          hfToken={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}  // 👈 STEP 2 — token pass karo
           onLogout={handleLogout}
         />
       )}
-
       {authModal && (
         <AuthModal
           mode={authModal}
