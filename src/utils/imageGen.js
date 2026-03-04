@@ -1,32 +1,45 @@
 /**
  * Khicho.AI — Image Generation Utilities
- * Uses Pollinations.AI as the free backend (no API key required)
- * Swap `buildUrl` with your own API (Stability AI, DALL-E, etc.) when scaling
+ * Uses Hugging Face FLUX.1-schnell — fast (3-8 sec), free token
  */
 
-const BASE = "https://image.pollinations.ai/prompt";
+const HF_MODEL = "black-forest-labs/FLUX.1-schnell";
+const HF_API   = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
 /**
- * Build a Pollinations.AI image URL
- * @param {string} prompt  - User prompt + style tag combined
- * @param {number} seed    - Random seed for reproducibility
- * @param {number} width   - Image width in pixels
- * @param {number} height  - Image height in pixels
- * @returns {string} Full image URL
+ * Generate image using Hugging Face API
+ * Returns a blob URL (not a direct link)
  */
-export const buildImageUrl = (prompt, seed, width = 512, height = 512) => {
-  const fullPrompt = `${prompt}, high quality, detailed, masterpiece`;
-  const encoded = encodeURIComponent(fullPrompt);
-  const randomSeed = seed ?? (Math.random() * 999999 | 0);
-  return `${BASE}/${encoded}?width=${width}&height=${height}&seed=${randomSeed}&nologo=true&enhance=true`;
+export const generateImage = async (prompt, hfToken) => {
+  const res = await fetch(HF_API, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${hfToken}`,
+      "Content-Type": "application/json",
+      "x-wait-for-model": "true",
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      parameters: { num_inference_steps: 4 }
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err?.error || `Error ${res.status}`;
+
+    if (res.status === 401) throw new Error("Invalid HF token — App.jsx mein token check karo");
+    if (res.status === 503) throw new Error("Model load ho raha hai — 30 sec baad retry karo");
+    if (res.status === 429) throw new Error("Rate limit — thoda ruko phir try karo");
+    throw new Error(msg);
+  }
+
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 };
 
 /**
- * Create an image generation job object
- * @param {string} promptText - Raw user prompt
- * @param {object} style      - Style object from STYLES constant
- * @param {number} index      - Index offset for seed variation
- * @returns {object} Image job with url, metadata
+ * Create an image job placeholder
  */
 export const createImageJob = (promptText, style, index = 0) => ({
   id: `${Date.now()}-${index}`,
@@ -34,47 +47,38 @@ export const createImageJob = (promptText, style, index = 0) => ({
   style: style.id,
   styleLabel: style.label,
   styleIcon: style.icon,
-  url: buildImageUrl(
-    `${promptText}, ${style.tag}`,
-    Math.random() * 999999 | 0,
-    512,
-    512
-  ),
+  url: null,
   createdAt: new Date().toISOString(),
-  status: "generating",
+  status: "generating", // "generating" | "done" | "error"
+  error: null,
 });
 
 /**
- * Download an image by URL
- * @param {string} url      - Image URL
- * @param {string} filename - Desired filename
+ * Build full prompt with style tag
+ */
+export const buildPrompt = (promptText, style) =>
+  `${promptText}, ${style.tag}, high quality, detailed`;
+
+/**
+ * Download image
  */
 export const downloadImage = async (url, filename = "khicho-ai.jpg") => {
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(objectUrl);
-  } catch (error) {
-    // Fallback: open in new tab
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+  } catch {
     window.open(url, "_blank");
   }
 };
 
 /**
- * Validate a user prompt
- * @param {string} prompt
- * @returns {{ valid: boolean, error?: string }}
+ * Validate prompt
  */
 export const validatePrompt = (prompt) => {
   const trimmed = prompt?.trim() ?? "";
-  if (!trimmed) return { valid: false, error: "Please enter a prompt" };
+  if (!trimmed)           return { valid: false, error: "Please enter a prompt" };
   if (trimmed.length < 3) return { valid: false, error: "Prompt too short — describe in more detail" };
   if (trimmed.length > 500) return { valid: false, error: "Prompt too long — keep it under 500 characters" };
   return { valid: true };
