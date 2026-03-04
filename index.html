@@ -133,9 +133,9 @@
       "Underwater kingdom glowing bioluminescence",
     ];
 
-   const imgUrl = (p,s,w=512,h=512) =>
-  `https://image.pollinations.ai/prompt/${encodeURIComponent(p+", high quality, detailed, masterpiece")}?width=${w}&height=${h}&seed=${s||(Math.random()*999999|0)}&nologo=true&model=flux`;
-
+  const imgUrl = (p,s,w=384,h=384) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(p+", high quality, detailed")}?width=${w}&height=${h}&seed=${s||(Math.random()*999999|0)}&nologo=true&model=flux-schnell`;
+    
     /* ── HELPERS ──────────────────────────────────────────────────────────── */
     function Orb({top,left,right,bottom,size,color,delay="0s"}) {
       return <div aria-hidden="true" style={{position:"fixed",top,left,right,bottom,width:size,height:size,borderRadius:"50%",background:`radial-gradient(circle,${color} 0%,transparent 70%)`,pointerEvents:"none",zIndex:0,animation:"orbFloat 12s ease-in-out infinite",animationDelay:delay}}/>;
