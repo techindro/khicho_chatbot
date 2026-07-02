@@ -1,16 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Landing from "@pages/Landing";
 import Dashboard from "@pages/Dashboard";
-import AuthModal from "@components/AuthModal";
+import AuthModal from "@components/Authmodal";
 import "./index.css";
 
-// 👇 STEP 1 — Apna token yahan paste karo
-const HF_TOKEN = "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";
+// Use environment variable for the token
+const HF_TOKEN = import.meta.env.VITE_HF_TOKEN || "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";
 
 export default function App() {
   const [page, setPage] = useState("landing");
   const [authModal, setAuthModal] = useState(null);
   const [user, setUser] = useState(null);
+
+  // Theme management
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("khicho_theme") || "light";
+  });
+  
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("khicho_theme", theme);
+  }, [theme]);
+
+
+  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
 
   const handleAuthSuccess = (userData) => {
     setUser(userData);
@@ -29,13 +46,17 @@ export default function App() {
         <Landing
           onLogin={() => setAuthModal("login")}
           onSignup={() => setAuthModal("signup")}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       )}
       {page === "dashboard" && user && (
         <Dashboard
           user={user}
-          hfToken={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}  // 👈 STEP 2 — token pass karo
+          hfToken={HF_TOKEN}
           onLogout={handleLogout}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       )}
       {authModal && (

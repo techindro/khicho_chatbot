@@ -15,7 +15,7 @@ export default function LazyImg({ src, alt, style, className }) {
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(110deg, #0d0d1f 30%, #1a1a3e 50%, #0d0d1f 70%)",
+            background: "linear-gradient(110deg, var(--bg-secondary) 30%, var(--bg-tertiary) 50%, var(--bg-secondary) 70%)",
             backgroundSize: "200% 100%",
             animation: "shimmer 1.5s infinite",
           }}
@@ -24,8 +24,8 @@ export default function LazyImg({ src, alt, style, className }) {
       {error && (
         <div style={{
           position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", background: "#0d0d1f",
-          color: "rgba(255,255,255,0.3)", gap: "8px", fontSize: "12px",
+          alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)",
+          color: "var(--text-muted)", gap: "8px", fontSize: "12px",
         }}>
           <span style={{ fontSize: "24px" }}>⚠</span>
           Failed to load

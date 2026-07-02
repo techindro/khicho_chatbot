@@ -1,16 +1,57 @@
+import { HfInference } from "@huggingface/inference";
+
 /**
  * Khicho.AI — Image Generation Utilities
- * Uses Hugging Face FLUX.1-schnell — fast (3-8 sec), free token
+ * Primary: Pollinations.AI (free, no token needed)
+ * Fallback: HuggingFace FLUX.1-schnell
  */
 
 const HF_MODEL = "black-forest-labs/FLUX.1-schnell";
+const HF_IMG2IMG_MODEL = "stabilityai/stable-diffusion-2-1"; // Changed from runwayml/stable-diffusion-v1-5 due to no provider
 const HF_API   = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
 /**
- * Generate image using Hugging Face API
- * Returns a blob URL (not a direct link)
+ * Generate Image-to-Image using HuggingFace Inference SDK
+ */
+export const generateImageToImage = async (imageBlob, prompt, hfToken) => {
+  if (!hfToken) {
+    throw new Error("Image-to-Image requires a valid HuggingFace Token");
+  }
+  
+  const hf = new HfInference(hfToken);
+  
+  try {
+    const resultBlob = await hf.imageToImage({
+      model: HF_IMG2IMG_MODEL,
+      inputs: imageBlob,
+      parameters: {
+        prompt: prompt,
+        strength: 0.75, // Controls how much to change the original image (0.0 to 1.0)
+      }
+    });
+    return URL.createObjectURL(resultBlob);
+  } catch (error) {
+    throw new Error(error.message || "Failed to transform image");
+  }
+};
+
+/**
+ * Generate image using Pollinations.AI (primary — free, no auth)
+ * Falls back to HuggingFace if hfToken is provided and Pollinations fails
  */
 export const generateImage = async (prompt, hfToken) => {
+  // Primary: Pollinations.AI — free, no auth, works directly as img src
+  const seed = Math.floor(Math.random() * 999999);
+  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux`;
+
+  // Return the URL directly — img tags load it without CORS issues
+  return pollinationsUrl;
+
+  // Fallback: HuggingFace API (needs valid token)
+  if (!hfToken) {
+    throw new Error("Image generation failed — please try again");
+  }
+
   const res = await fetch(HF_API, {
     method: "POST",
     headers: {
@@ -28,9 +69,9 @@ export const generateImage = async (prompt, hfToken) => {
     const err = await res.json().catch(() => ({}));
     const msg = err?.error || `Error ${res.status}`;
 
-    if (res.status === 401) throw new Error("Invalid HF token — App.jsx mein token check karo");
-    if (res.status === 503) throw new Error("Model load ho raha hai — 30 sec baad retry karo");
-    if (res.status === 429) throw new Error("Rate limit — thoda ruko phir try karo");
+    if (res.status === 401) throw new Error("Invalid HF token — check your .env file");
+    if (res.status === 503) throw new Error("Model is loading — retry in 30 seconds");
+    if (res.status === 429) throw new Error("Rate limited — wait a moment and try again");
     throw new Error(msg);
   }
 
@@ -58,6 +99,12 @@ export const createImageJob = (promptText, style, index = 0) => ({
  */
 export const buildPrompt = (promptText, style) =>
   `${promptText}, ${style.tag}, high quality, detailed`;
+
+/**
+ * Generate a static URL from Pollinations.AI for the hero section
+ */
+export const buildImageUrl = (p, s, w=512, h=512) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(p+", high quality, detailed, masterpiece")}?width=${w}&height=${h}&seed=${s||Math.random()*999999|0}&nologo=true&enhance=true`;
 
 /**
  * Download image

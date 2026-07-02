@@ -1,176 +1,165 @@
-import { useState, useEffect, useRef } from "react";
-import Logo from "@components/Logo";
-import LazyImg from "@components/LazyImg";
-import GlowOrb from "@components/GlowOrb";
-import { HERO_PROMPTS, FEATURES, STATS } from "@constants";
+import { useState, useEffect } from "react";
+import Logo from "@components/logo";
+import LazyImg from "@components/Lazylmg";
+import { HERO_PROMPTS, FEATURES, HIGHLIGHTS } from "../constants";
 import { buildImageUrl } from "@utils/imageGen";
+import {
+  Zap, Palette, ShieldCheck, Download, Infinity, Smartphone,
+} from "lucide-react";
+
+// Map lucide icon names to components
+const ICON_MAP = { Zap, Palette, ShieldCheck, Download, Infinity, Smartphone };
 
 /**
- * Landing — Marketing homepage (before auth)
+ * Landing — Clean, honest marketing page
  */
-export default function Landing({ onLogin, onSignup }) {
+export default function Landing({ onLogin, onSignup, theme, toggleTheme }) {
   const [scrolled, setScrolled] = useState(false);
-  const heroRef = useRef(null);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 50);
+    const fn = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const btn = {
-    primary: {
-      padding: "15px 36px",
-      background: "linear-gradient(135deg, #6366f1 0%, #a78bfa 100%)",
-      border: "none", borderRadius: "14px", color: "white",
-      fontSize: "15px", fontWeight: "700", cursor: "pointer",
-      fontFamily: "'Playfair Display', serif",
-      boxShadow: "0 8px 40px rgba(99,102,241,0.4), 0 0 0 1px rgba(167,139,250,0.15)",
-      transition: "all 0.25s",
-    },
-    ghost: {
-      padding: "15px 30px",
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.1)",
-      borderRadius: "14px", color: "rgba(255,255,255,0.7)",
-      fontSize: "14px", cursor: "pointer", transition: "all 0.2s",
-    },
-  };
-
   return (
-    <div style={{ background: "#06060f", color: "white", minHeight: "100vh", position: "relative", overflowX: "hidden" }}>
-      {/* Background Orbs */}
-      <GlowOrb top="-120px" left="-120px" size="550px" color="rgba(99,102,241,0.12)" delay="0s" />
-      <GlowOrb top="35%" left="65%" size="450px" color="rgba(167,139,250,0.07)" delay="4s" />
-      <GlowOrb top="75%" left="-60px" size="380px" color="rgba(96,165,250,0.06)" delay="7s" />
+    <div style={{ background: "var(--bg)", color: "var(--text-primary)", minHeight: "100vh" }}>
 
       {/* ── NAVBAR ── */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        height: "66px", padding: "0 5%",
+        height: "60px", padding: "0 24px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: scrolled ? "rgba(6,6,15,0.88)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
-        transition: "all 0.4s ease",
+        background: scrolled ? (theme === "dark" ? "rgba(3,7,18,0.92)" : "rgba(255,255,255,0.92)") : "var(--bg)",
+        backdropFilter: scrolled ? "blur(12px)" : "none",
+        borderBottom: "1px solid var(--border)",
+        transition: "all 0.3s ease",
       }}>
         <Logo size="md" />
-
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <button
-            onClick={onLogin}
-            style={{
-              padding: "9px 24px", background: "transparent",
-              border: "1px solid rgba(255,255,255,0.12)", borderRadius: "100px",
-              color: "rgba(255,255,255,0.7)", cursor: "pointer",
-              fontSize: "13px", fontWeight: "500", transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(167,139,250,0.5)"; e.currentTarget.style.color = "white"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-          >
-            Sign In
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button onClick={toggleTheme} style={{
+            background: "transparent", border: "none", color: "var(--text-secondary)",
+            cursor: "pointer", padding: "6px", borderRadius: "8px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {theme === "dark" ? "☀️" : "🌙"}
           </button>
-          <button
-            onClick={onSignup}
-            style={{
-              padding: "9px 24px",
-              background: "linear-gradient(135deg, #6366f1, #a78bfa)",
-              border: "none", borderRadius: "100px", color: "white",
-              cursor: "pointer", fontSize: "13px", fontWeight: "600",
-              boxShadow: "0 4px 20px rgba(99,102,241,0.35)", transition: "all 0.2s",
+          {["Models", "Docs", "Pricing"].map(item => (
+            <span key={item} style={{
+              padding: "6px 14px", fontSize: "14px", color: "var(--text-secondary)",
+              cursor: "pointer", borderRadius: "8px", transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-          >
-            Start Free ✦
-          </button>
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+            >{item}</span>
+          ))}
+          <div style={{ width: "1px", height: "20px", background: "var(--border)", margin: "0 4px" }} />
+          <button onClick={onLogin} style={{
+            padding: "7px 16px", background: "transparent", border: "none",
+            color: "var(--text-primary)", fontSize: "14px", fontWeight: 500,
+            cursor: "pointer", borderRadius: "8px", transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-tertiary)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >Sign In</button>
+          <button onClick={onSignup} style={{
+            padding: "7px 18px",
+            background: "var(--button-bg)", border: "none", borderRadius: "8px",
+            color: "var(--button-text)", fontSize: "14px", fontWeight: 600,
+            cursor: "pointer", transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "var(--button-hover)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "var(--button-bg)"}
+          >Sign Up</button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section ref={heroRef} style={{
-        minHeight: "100vh", display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        padding: "110px 5% 60px", position: "relative", zIndex: 1,
+      <section style={{
+        maxWidth: "1200px", margin: "0 auto",
+        padding: "120px 24px 60px", textAlign: "center",
       }}>
         {/* Badge */}
         <div style={{
           display: "inline-flex", alignItems: "center", gap: "8px",
-          background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
-          borderRadius: "100px", padding: "8px 20px", marginBottom: "30px",
-          color: "#a78bfa", fontSize: "12px", fontFamily: "monospace",
-          animation: "fadeSlideUp 0.6s ease both",
+          background: "#eef2ff", border: "1px solid #c7d2fe",
+          borderRadius: "9999px", padding: "6px 16px", marginBottom: "24px",
+          fontSize: "13px", color: "#4f46e5", fontWeight: 500,
+          animation: "fadeSlideUp 0.5s ease both",
         }}>
-          <span style={{
-            width: "7px", height: "7px", background: "#6366f1", borderRadius: "50%",
-            boxShadow: "0 0 10px #6366f1, 0 0 20px rgba(99,102,241,0.4)",
-            display: "inline-block", animation: "pulseGlow 2s infinite",
-          }} />
-          India's Most Powerful AI Image Generator
+          <Zap size={14} />
+          Free image generator
         </div>
 
-        {/* Headline */}
         <h1 style={{
-          fontFamily: "'Playfair Display', serif", fontWeight: 700,
-          fontSize: "clamp(46px, 7.5vw, 92px)", lineHeight: 1.04,
-          margin: "0 0 20px", textAlign: "center", letterSpacing: "-1.5px",
-          animation: "fadeSlideUp 0.7s ease 0.1s both",
+          fontFamily: "'Inter', sans-serif", fontWeight: 800,
+          fontSize: "clamp(36px, 6vw, 72px)", lineHeight: 1.1,
+          color: "var(--text-primary)", margin: "0 0 18px", letterSpacing: "-1.5px",
+          animation: "fadeSlideUp 0.5s ease 0.1s both",
         }}>
-          <span style={{ color: "white" }}>Imagine It.</span>
-          <br />
+          Turn words into{" "}
           <span style={{
-            background: "linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #f0abfc 100%)",
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>Khicho It.</span>
+          }}>images</span>
         </h1>
 
-        {/* Subheading */}
         <p style={{
-          color: "rgba(255,255,255,0.45)", textAlign: "center",
-          fontSize: "clamp(15px, 2.5vw, 19px)",
-          maxWidth: "560px", margin: "0 auto 40px", lineHeight: 1.75,
-          fontFamily: "'Crimson Pro', serif", fontWeight: 300,
-          animation: "fadeSlideUp 0.7s ease 0.2s both",
+          color: "var(--text-secondary)", fontSize: "clamp(16px, 2.2vw, 20px)",
+          maxWidth: "600px", margin: "0 auto 32px", lineHeight: 1.6,
+          fontWeight: 400, animation: "fadeSlideUp 0.5s ease 0.2s both",
         }}>
-          Turn your words into stunning AI art in seconds.
-          Ghibli, Anime, Realistic, Cyberpunk — every style, zero limits.
+          Describe what you want to see and choose an art style. It's fast, free, and there are no limits.
         </p>
 
         {/* CTAs */}
         <div style={{
           display: "flex", gap: "12px", justifyContent: "center",
-          flexWrap: "wrap", animation: "fadeSlideUp 0.7s ease 0.3s both",
+          flexWrap: "wrap", animation: "fadeSlideUp 0.5s ease 0.3s both",
         }}>
-          <button onClick={onSignup} style={btn.primary}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 14px 50px rgba(99,102,241,0.55)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 40px rgba(99,102,241,0.4)"; }}
-          >✦ Start Creating — Free</button>
-          <button onClick={onLogin} style={btn.ghost}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(167,139,250,0.4)"; e.currentTarget.style.color = "white"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-          >Sign In →</button>
+          <button onClick={onSignup} style={{
+            padding: "12px 28px", display: "flex", alignItems: "center", gap: "8px",
+            background: "var(--button-bg)", border: "none", borderRadius: "10px",
+            color: "var(--button-text)", fontSize: "15px", fontWeight: 600,
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--button-hover)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--button-bg)"; e.currentTarget.style.transform = "translateY(0)"; }}
+          ><Zap size={16} /> Start Creating</button>
+          <button onClick={onLogin} style={{
+            padding: "12px 28px",
+            background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "10px",
+            color: "var(--text-primary)", fontSize: "15px", fontWeight: 500,
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--text-muted)"; e.currentTarget.style.background = "var(--bg-secondary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--bg)"; }}
+          >Live Demo →</button>
         </div>
-        <p style={{ color: "rgba(255,255,255,0.2)", fontSize: "11px", marginTop: "14px", fontFamily: "monospace", animation: "fadeSlideUp 0.7s ease 0.4s both" }}>
-          No credit card required • Free forever plan
-        </p>
 
-        {/* Hero Image Mosaic */}
+        <p style={{ color: "var(--text-muted)", fontSize: "13px", marginTop: "16px", animation: "fadeSlideUp 0.5s ease 0.4s both" }}>
+          No credit card · No account required · Runs in your browser
+        </p>
+      </section>
+
+      {/* ── HERO IMAGE MOSAIC ── */}
+      <section style={{
+        maxWidth: "1100px", margin: "0 auto", padding: "0 24px 80px",
+        animation: "fadeSlideUp 0.6s ease 0.35s both",
+      }}>
         <div style={{
-          marginTop: "70px", width: "100%", maxWidth: "1100px",
-          display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px",
-          animation: "fadeSlideUp 0.8s ease 0.35s both",
-        }}>
-          {HERO_PROMPTS.map((item, i) => (
+          display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px",
+          borderRadius: "16px", overflow: "hidden",
+          border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)",
+        }} className="hero-grid">
+          {HERO_PROMPTS.slice(0, 8).map((item, i) => (
             <div key={i} style={{
               gridColumn: i < 2 ? "span 2" : "span 1",
-              aspectRatio: i < 2 ? "1.2" : "1",
-              borderRadius: "14px", overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.07)",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.45)",
-              animation: `fadeSlideUp 0.5s ease ${0.07 * i}s both`,
+              aspectRatio: i < 2 ? "1.3" : "1",
+              overflow: "hidden", position: "relative",
             }}>
               <LazyImg
-                src={buildImageUrl(item.p, item.s, i < 2 ? 600 : 400, i < 2 ? 480 : 400)}
+                src={buildImageUrl(item.p, item.s, i < 2 ? 600 : 400, i < 2 ? 460 : 400)}
                 alt={item.p}
                 style={{ width: "100%", height: "100%" }}
               />
@@ -179,73 +168,102 @@ export default function Landing({ onLogin, onSignup }) {
         </div>
       </section>
 
-      {/* ── STATS ── */}
-      <section style={{ position: "relative", zIndex: 1, padding: "0 5% 80px" }}>
+      {/* ── PRODUCT HIGHLIGHTS (honest) ── */}
+      <section style={{ padding: "0 24px 80px" }}>
         <div style={{
-          maxWidth: "860px", margin: "0 auto",
-          display: "flex",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          maxWidth: "700px", margin: "0 auto",
+          display: "flex", borderRadius: "14px",
+          border: "1px solid var(--border)", overflow: "hidden",
+          background: "var(--bg-secondary)",
         }}>
-          {STATS.map((s, i) => (
+          {HIGHLIGHTS.map((s, i) => (
             <div key={i} style={{
-              flex: 1, textAlign: "center", padding: "34px 20px",
-              borderRight: i < 3 ? "1px solid rgba(255,255,255,0.05)" : "none",
+              flex: 1, textAlign: "center", padding: "24px 16px",
+              borderRight: i < HIGHLIGHTS.length - 1 ? "1px solid var(--border)" : "none",
             }}>
               <div style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700,
-                background: "linear-gradient(135deg, #a78bfa, #60a5fa)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 800,
+                color: "#6366f1", letterSpacing: "-0.5px",
               }}>{s.n}</div>
-              <div style={{ color: "rgba(255,255,255,0.32)", fontSize: "12px", marginTop: "4px", fontFamily: "monospace" }}>{s.l}</div>
+              <div style={{ color: "var(--text-muted)", fontSize: "13px", marginTop: "4px", fontWeight: 500 }}>{s.l}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section style={{ padding: "0 5% 100px", position: "relative", zIndex: 1 }}>
-        <div style={{ maxWidth: "1060px", margin: "0 auto" }}>
+      {/* ── FEATURES (with real Lucide icons) ── */}
+      <section style={{ padding: "0 24px 100px" }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <h2 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "clamp(30px, 5vw, 54px)", fontWeight: 700,
-            textAlign: "center", marginBottom: "14px",
+            fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800,
+            textAlign: "center", marginBottom: "8px", letterSpacing: "-0.5px",
           }}>
-            <span style={{ color: "white" }}>Why creators choose </span>
-            <span style={{
-              background: "linear-gradient(135deg, #a78bfa, #60a5fa)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>Khicho.AI</span>
+            Why use <span style={{ color: "var(--accent)" }}>Khicho.AI</span>
           </h2>
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", marginBottom: "56px", fontSize: "15px" }}>
-            Built for artists, dreamers, and creators across India & beyond
+          <p style={{ textAlign: "center", color: "var(--text-muted)", marginBottom: "48px", fontSize: "16px" }}>
+            Simple, fast, and completely free.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-            {FEATURES.map((f, i) => (
+            {FEATURES.map((f, i) => {
+              const IconComp = ICON_MAP[f.lucideIcon];
+              return (
+                <div key={i} style={{
+                  background: "var(--surface)", border: "1px solid var(--border)",
+                  borderRadius: "14px", padding: "24px 20px",
+                  transition: "all 0.2s ease", cursor: "default",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--accent-border)";
+                  e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}>
+                  <div style={{
+                    width: "40px", height: "40px", borderRadius: "10px",
+                    background: "var(--accent-bg)", display: "flex", alignItems: "center",
+                    justifyContent: "center", marginBottom: "14px", color: "var(--accent)",
+                  }}>
+                    {IconComp && <IconComp size={20} />}
+                  </div>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 8px", color: "var(--text-primary)" }}>{f.title}</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ padding: "0 24px 100px" }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "32px", fontWeight: 800, textAlign: "center", marginBottom: "48px", letterSpacing: "-0.5px" }}>
+            How it works
+          </h2>
+          <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { step: "1", title: "Describe your idea", desc: "Type what you want to see in simple english.", icon: "✍️" },
+              { step: "2", title: "Pick an art style", desc: "Choose from our list of styles.", icon: "🎨" },
+              { step: "3", title: "Generate & download", desc: "Click Generate. Your image is ready in seconds.", icon: "✨" },
+            ].map((item, i) => (
               <div key={i} style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                borderRadius: "22px", padding: "30px 26px",
-                transition: "all 0.3s cubic-bezier(0.23,1,0.32,1)",
-                animation: `fadeSlideUp 0.5s ease ${0.08 * i}s both`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(167,139,250,0.3)";
-                e.currentTarget.style.background = "rgba(99,102,241,0.05)";
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 16px 40px rgba(0,0,0,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              >
-                <div style={{ fontSize: "30px", marginBottom: "16px" }}>{f.icon}</div>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "19px", margin: "0 0 10px", color: "white" }}>{f.title}</h3>
-                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", margin: 0, lineHeight: 1.75 }}>{f.desc}</p>
+                flex: "1 1 220px", textAlign: "center", padding: "24px 16px",
+              }}>
+                <div style={{
+                  width: "48px", height: "48px", borderRadius: "50%",
+                  background: "var(--accent-bg)", border: "2px solid var(--accent-border)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "20px", margin: "0 auto 14px",
+                }}>{item.icon}</div>
+                <div style={{ fontSize: "12px", color: "var(--accent)", fontWeight: 700, marginBottom: "6px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Step {item.step}
+                </div>
+                <h3 style={{ fontSize: "17px", fontWeight: 700, margin: "0 0 6px", color: "var(--text-primary)" }}>{item.title}</h3>
+                <p style={{ color: "var(--text-secondary)", fontSize: "14px", lineHeight: 1.5, margin: 0 }}>{item.desc}</p>
               </div>
             ))}
           </div>
@@ -253,51 +271,45 @@ export default function Landing({ onLogin, onSignup }) {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ padding: "0 5% 100px", position: "relative", zIndex: 1 }}>
+      <section style={{ padding: "0 24px 80px" }}>
         <div style={{
-          maxWidth: "820px", margin: "0 auto", textAlign: "center",
-          padding: "64px 40px",
-          background: "linear-gradient(135deg, rgba(99,102,241,0.09), rgba(167,139,250,0.04))",
-          border: "1px solid rgba(99,102,241,0.22)", borderRadius: "32px",
-          boxShadow: "0 0 100px rgba(99,102,241,0.07), inset 0 1px 0 rgba(255,255,255,0.05)",
+          maxWidth: "720px", margin: "0 auto", textAlign: "center",
+          padding: "56px 32px", borderRadius: "20px",
+          background: "var(--bg-secondary)", border: "1px solid var(--border)",
         }}>
-          <h2 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: "clamp(28px, 4.5vw, 52px)", fontWeight: 700, margin: "0 0 14px",
-          }}>
-            Ready to{" "}
-            <span style={{
-              background: "linear-gradient(135deg, #a78bfa, #60a5fa)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>Khicho</span>?
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, margin: "0 0 12px", letterSpacing: "-0.5px", color: "var(--text-primary)" }}>
+            Try it now
           </h2>
-          <p style={{ color: "rgba(255,255,255,0.4)", marginBottom: "30px", fontSize: "15px", lineHeight: 1.7 }}>
-            Join 150,000+ creators already making magic with AI
+          <p style={{ color: "var(--text-secondary)", marginBottom: "24px", fontSize: "16px" }}>
+            No account needed. Just describe what you want and click generate.
           </p>
-          <button onClick={onSignup} style={btn.primary}
-            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.04)"}
-            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-          >✦ Get Started Free — No Credit Card</button>
+          <button onClick={onSignup} style={{
+            padding: "12px 32px", background: "var(--button-bg)", border: "none",
+            borderRadius: "10px", color: "var(--button-text)", fontSize: "15px", fontWeight: 600,
+            cursor: "pointer", transition: "all 0.2s", display: "inline-flex",
+            alignItems: "center", gap: "8px",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "var(--button-hover)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "var(--button-bg)"}
+          ><Zap size={16} /> Start Creating</button>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ── FOOTER ── */}
       <footer style={{
-        borderTop: "1px solid rgba(255,255,255,0.05)", padding: "28px 5%",
+        borderTop: "1px solid var(--border)", padding: "20px 24px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         flexWrap: "wrap", gap: "12px",
-        position: "relative", zIndex: 1,
       }}>
         <Logo size="sm" />
-        <p style={{ color: "rgba(255,255,255,0.2)", fontSize: "12px", fontFamily: "monospace" }}>
-          © 2025 Khicho.AI — Made with 💜 in India
+        <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>
+          © 2025 Khicho.AI — Open-source AI image generator
         </p>
         <div style={{ display: "flex", gap: "20px" }}>
-          {["Privacy", "Terms", "Contact"].map((l) => (
-            <span key={l} style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px", cursor: "pointer", fontFamily: "monospace",
-              transition: "color 0.2s" }}
-            onMouseEnter={(e) => e.currentTarget.style.color = "#a78bfa"}
-            onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.3)"}
+          {["Privacy", "Terms", "GitHub"].map((l) => (
+            <span key={l} style={{ color: "var(--text-muted)", fontSize: "13px", cursor: "pointer", transition: "color 0.15s" }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "var(--accent)"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
             >{l}</span>
           ))}
         </div>
