@@ -33,47 +33,88 @@ export const generateImageToImage = async (imageBlob, prompt, hfToken) => {
   }
 };
 
-const buildPollinationsUrl = (prompt, seed) =>
-  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
+const getDimensionsFromAspectRatio = (ratio) => {
+  if (ratio === "16:9") return { width: 768, height: 432 };
+  if (ratio === "9:16") return { width: 432, height: 768 };
+  if (ratio === "3:4")  return { width: 480, height: 640 };
+  if (ratio === "4:5")  return { width: 512, height: 640 };
+  return { width: 512, height: 512 }; // Default 1:1
+};
+
+const buildPollinationsUrl = (prompt, seed, width = 512, height = 512) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
 
 /**
  * Verify image exists via fetch, return the persistent Pollinations URL
  */
-const verifyAndGetUrl = async (url, timeoutMs = 120000) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+const verifyAndGetUrl = (url, timeoutMs = 120000) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const timer = setTimeout(() => {
+      img.src = "";
+      reject(new Error("Image generation timed out — try again"));
+    }, timeoutMs);
 
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`Failed to generate image (${response.status})`);
-    }
-    const blob = await response.blob();
-    if (!blob.type.startsWith("image/")) {
-      throw new Error("Invalid image response from server");
-    }
-    return url;
-  } catch (err) {
-    if (err.name === "AbortError") {
-      throw new Error("Image generation timed out — try again");
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(url);
+    };
+
+    img.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("Failed to generate image (check connection)"));
+    };
+
+    img.src = url;
+  });
 };
 
 /**
- * Generate image using Pollinations.AI (primary — free, no auth)
- * Verifies the image loaded and retries on failure
+ * Generate image using Ideogram (if subscribed) or Pollinations.AI (free backup)
  */
-export const generateImage = async (prompt, index = 0) => {
+export const generateImage = async (prompt, index = 0, currentTier = "Free", ideogramApiKey = "", aspectRatio = "1:1") => {
+  // If user is on a paid tier and we have an Ideogram key, call Ideogram
+  if (currentTier !== "Free" && ideogramApiKey) {
+    try {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const endpoint = isLocal ? "/api-ideogram/v1/ideogram-v4/generate" : "https://api.ideogram.ai/v1/ideogram-v4/generate";
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Key": ideogramApiKey
+        },
+        body: JSON.stringify({
+          text_prompt: prompt,
+          aspect_ratio: aspectRatio === "3:4" ? "3:4" : aspectRatio === "9:16" ? "9:16" : aspectRatio === "4:5" ? "4:5" : aspectRatio === "16:9" ? "16:9" : "1:1"
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Ideogram API failed: ${res.statusText || errText}`);
+      }
+
+      const data = await res.json();
+      if (data && data.data && data.data[0] && data.data[0].url) {
+        return data.data[0].url;
+      } else {
+        throw new Error("No image data returned from Ideogram");
+      }
+    } catch (err) {
+      console.warn("Ideogram generation failed, falling back to Pollinations:", err);
+    }
+  }
+
+  // Pollinations.AI Free Tier / Fallback Logic
+  const { width, height } = getDimensionsFromAspectRatio(aspectRatio);
   const baseSeed = Date.now() + index * 9973 + Math.floor(Math.random() * 10000);
   const maxRetries = 3;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const seed = baseSeed + attempt * 50000;
-    const url = buildPollinationsUrl(prompt, seed);
+    const url = buildPollinationsUrl(prompt, seed, width, height);
 
     try {
       if (attempt > 0) {
@@ -89,12 +130,13 @@ export const generateImage = async (prompt, index = 0) => {
 /**
  * Create an image job placeholder
  */
-export const createImageJob = (promptText, style, index = 0) => ({
+export const createImageJob = (promptText, style, index = 0, aspectRatio = "1:1") => ({
   id: `${Date.now()}-${index}`,
   prompt: promptText,
   style: style.id,
   styleLabel: style.label,
   styleIcon: style.icon,
+  aspectRatio: aspectRatio,
   url: null,
   createdAt: new Date().toISOString(),
   status: "generating", // "generating" | "done" | "error"

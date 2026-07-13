@@ -2,14 +2,23 @@ import { useState } from "react";
 import { downloadImage } from "@utils/imageGen";
 import { STYLES } from "../constants";
 
-export default function ImageCard({ item, onDelete }) {
+export default function ImageCard({ item, onDelete, onImageClick }) {
   const [hov, setHov] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(item.prompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const style = STYLES.find((s) => s.id === item.style);
 
-  const handleDownload = async () => {
+  const handleDownload = async (e) => {
+    if (e) e.stopPropagation();
     setDownloading(true);
     await downloadImage(item.url, `khicho-${item.id}.jpg`);
     setDownloading(false);
@@ -142,7 +151,15 @@ export default function ImageCard({ item, onDelete }) {
         animation: "fadeSlideUp 0.4s ease forwards",
       }}
     >
-      <div style={{ aspectRatio: "1", position: "relative", overflow: "hidden" }}>
+      <div 
+        onClick={onImageClick}
+        style={{ 
+          aspectRatio: item.aspectRatio === "16:9" ? "16/9" : item.aspectRatio === "9:16" ? "9/16" : item.aspectRatio === "3:4" ? "3/4" : item.aspectRatio === "4:5" ? "4/5" : "1",
+          position: "relative", 
+          overflow: "hidden", 
+          cursor: "pointer" 
+        }}
+      >
         <img
           src={item.url}
           alt={item.prompt}
@@ -175,13 +192,18 @@ export default function ImageCard({ item, onDelete }) {
               }}>
                 {downloading ? "Saving..." : "⬇ Download"}
               </button>
-              <button onClick={() => window.open(item.url, "_blank")} style={{
+              <button onClick={handleCopy} style={{
+                padding: "8px 12px", background: "rgba(255,255,255,0.15)",
+                border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px",
+                color: "white", cursor: "pointer", fontSize: "12px",
+              }} title="Copy Prompt">{copied ? "✓" : "📋"}</button>
+              <button onClick={(e) => { e.stopPropagation(); window.open(item.url, "_blank"); }} style={{
                 padding: "8px 12px", background: "rgba(255,255,255,0.15)",
                 border: "1px solid rgba(255,255,255,0.15)", borderRadius: "8px",
                 color: "white", cursor: "pointer", fontSize: "12px",
               }}>↗</button>
               {onDelete && (
-                <button onClick={() => onDelete(item.id)} style={{
+                <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }} style={{
                   padding: "8px 12px", background: "rgba(239,68,68,0.3)",
                   border: "none", borderRadius: "8px",
                   color: "white", cursor: "pointer", fontSize: "12px",
@@ -191,13 +213,13 @@ export default function ImageCard({ item, onDelete }) {
           </div>
         )}
       </div>
-      <div style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f3f4f6" }}>
+      <div style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border)" }}>
         <span style={{
           display: "inline-flex", alignItems: "center", gap: "4px",
-          background: "#eef2ff", color: "#6366f1", fontSize: "11px",
+          background: "var(--accent-bg)", color: "var(--text-primary)", fontSize: "11px",
           padding: "3px 10px", borderRadius: "9999px", fontWeight: 500,
         }}>{style?.icon} {style?.label}</span>
-        <span style={{ color: "#d1d5db", fontSize: "11px" }}>
+        <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
           {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>

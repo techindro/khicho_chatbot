@@ -2,15 +2,26 @@ import { useState, useEffect } from "react";
 import Landing from "@pages/Landing";
 import Dashboard from "@pages/Dashboard";
 import AuthModal from "@components/Authmodal";
+import PricingModal from "@components/PricingModal";
 import "./index.css";
 
 // Use environment variable for the token
 const HF_TOKEN = import.meta.env.VITE_HF_TOKEN || "";
+const IDEOGRAM_API_KEY = import.meta.env.VITE_IDEOGRAM_API_KEY || "";
 
 export default function App() {
   const [page, setPage] = useState("landing");
   const [authModal, setAuthModal] = useState(null);
   const [user, setUser] = useState(null);
+  const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState(() => {
+    return localStorage.getItem("khicho_subscription") || "Free";
+  });
+
+  const handleSubscribe = (tier) => {
+    setSubscriptionTier(tier);
+    localStorage.setItem("khicho_subscription", tier);
+  };
 
   // Theme management
   const [theme, setTheme] = useState(() => {
@@ -46,6 +57,7 @@ export default function App() {
         <Landing
           onLogin={() => setAuthModal("login")}
           onSignup={() => setAuthModal("signup")}
+          onPricingClick={() => setPricingModalOpen(true)}
           theme={theme}
           toggleTheme={toggleTheme}
         />
@@ -54,6 +66,9 @@ export default function App() {
         <Dashboard
           user={user}
           hfToken={HF_TOKEN}
+          ideogramApiKey={IDEOGRAM_API_KEY}
+          currentTier={subscriptionTier}
+          onPricingClick={() => setPricingModalOpen(true)}
           onLogout={handleLogout}
           theme={theme}
           toggleTheme={toggleTheme}
@@ -66,6 +81,12 @@ export default function App() {
           onSuccess={handleAuthSuccess}
         />
       )}
+      <PricingModal
+        isOpen={pricingModalOpen}
+        onClose={() => setPricingModalOpen(false)}
+        currentTier={subscriptionTier}
+        onSubscribe={handleSubscribe}
+      />
     </>
   );
 }

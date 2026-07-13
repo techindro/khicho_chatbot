@@ -17,6 +17,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/api-ideogram': {
+        target: 'https://api.ideogram.ai',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-ideogram/, ''),
+      }
+    }
   },
   preview: {
     port: 3000,
