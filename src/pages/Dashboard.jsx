@@ -625,7 +625,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
               </div>
             </header>
 
-            <div className="mj-gallery">
+            <div className="mj-gallery animate-slide-up">
               {images.length === 0 ? (
                 <div className="mj-gallery-empty">
                   <Sparkles size={32} strokeWidth={1} color="var(--text-muted)" />
@@ -653,7 +653,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
           </>
         ) : (
           /* Video Studio Panel JSX */
-          <div className="mj-video-studio">
+          <div className="mj-video-studio animate-slide-up">
             <div className="mj-video-main">
               {/* Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1051,7 +1051,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
 
       {/* Bottom prompt bar */}
       {activeTab === "create" && (
-        <div className="mj-prompt-dock">
+        <div className="mj-prompt-dock animate-slide-up">
         <div className="mj-prompt-bar">
           {uploadedImage && (
             <div style={{ position: "relative", display: "inline-block", marginBottom: 10 }}>

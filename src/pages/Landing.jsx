@@ -64,20 +64,20 @@ export default function Landing({ onLogin, onSignup, theme, toggleTheme, onPrici
 
       {/* Hero */}
       <section className="mj-landing-hero">
-        <h1>
+        <h1 className="animate-slide-up animate-delay-1">
           Explore new<br /><em>ways of creating</em>
         </h1>
-        <p>
+        <p className="animate-slide-up animate-delay-2">
           Turn your imagination into stunning visuals. Describe anything — we bring it to life.
         </p>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }} className="animate-slide-up animate-delay-3">
           <button className="mj-cta-btn" onClick={onSignup}>Start Creating</button>
           <button className="mj-ghost-btn" onClick={onLogin}>Sign In</button>
         </div>
       </section>
 
       {/* Showcase grid */}
-      <section className="mj-landing-showcase">
+      <section className="mj-landing-showcase animate-slide-up animate-delay-4">
         <div className="mj-showcase-grid">
           {HERO_PROMPTS.slice(0, 8).map((item, i) => (
             <div key={i}>
@@ -92,7 +92,7 @@ export default function Landing({ onLogin, onSignup, theme, toggleTheme, onPrici
       </section>
 
       {/* Stats */}
-      <div className="mj-feature-row">
+      <div className="mj-feature-row animate-slide-up animate-delay-4">
         {HIGHLIGHTS.map((s, i) => (
           <div key={i} className="mj-feature-item">
             <div className="num">{s.n}</div>
