@@ -46,7 +46,7 @@ export default function Landing({ onLogin, onSignup, theme, toggleTheme, onPrici
 
       {/* Nav */}
       <nav className="mj-landing-nav" style={{
-        background: scrolled ? "rgba(10,10,10,0.9)" : "rgba(10,10,10,0.6)",
+        background: scrolled ? "var(--nav-bg-scrolled)" : "var(--nav-bg)",
       }}>
         <Logo size="md" />
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>

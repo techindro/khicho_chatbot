@@ -39,6 +39,8 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --nav-bg: rgba(10, 10, 10, 0.6);
+  --nav-bg-scrolled: rgba(10, 10, 10, 0.95);
 }
 
 .light {
@@ -60,6 +62,8 @@
   --button-text: #ffffff;
   --prompt-bg: #ffffff;
   --prompt-border: rgba(0, 0, 0, 0.1);
+  --nav-bg: rgba(245, 245, 245, 0.6);
+  --nav-bg-scrolled: rgba(255, 255, 255, 0.95);
 }
 
 *, *::before, *::after {
@@ -488,7 +492,7 @@ input:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(10, 10, 10, 0.6);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
