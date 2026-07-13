@@ -5,7 +5,7 @@ import AuthModal from "@components/Authmodal";
 import "./index.css";
 
 // Use environment variable for the token
-const HF_TOKEN = import.meta.env.VITE_HF_TOKEN || "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";
+const HF_TOKEN = import.meta.env.VITE_HF_TOKEN || "";
 
 export default function App() {
   const [page, setPage] = useState("landing");
@@ -14,14 +14,14 @@ export default function App() {
 
   // Theme management
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("khicho_theme") || "light";
+    return localStorage.getItem("khicho_theme") || "dark";
   });
   
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove("light");
     }
     localStorage.setItem("khicho_theme", theme);
   }, [theme]);

@@ -1,12 +1,9 @@
-/**
- * KhichoLogo — Clean brand logo for light theme
- */
 export default function KhichoLogo({ size = "md", showMark = true, className }) {
   const sizes = {
-    sm: { mark: 26, text: "16px" },
-    md: { mark: 32, text: "20px" },
-    lg: { mark: 44, text: "28px" },
-    xl: { mark: 60, text: "38px" },
+    sm: { mark: 24, text: "15px" },
+    md: { mark: 30, text: "18px" },
+    lg: { mark: 40, text: "24px" },
+    xl: { mark: 52, text: "32px" },
   };
   const s = sizes[size] || sizes.md;
 
@@ -16,30 +13,28 @@ export default function KhichoLogo({ size = "md", showMark = true, className }) 
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "8px",
+        gap: "10px",
         userSelect: "none",
       }}
     >
       {showMark && (
-        <div style={{
-          width: s.mark, height: s.mark, borderRadius: "8px",
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width={s.mark * 0.6} height={s.mark * 0.6} viewBox="0 0 24 24" fill="none">
-            <path d="M4 4h4v16H4V4zm4 8l8-8h4L12 12l8 8h-4L8 12z" fill="white" />
-          </svg>
-        </div>
+        <svg width={s.mark} height={s.mark} viewBox="0 0 32 32" fill="none">
+          <path
+            d="M6 26V6h4l10 12L30 6h-4L16 20 10 6H6z"
+            fill="var(--text-primary)"
+            opacity="0.9"
+          />
+        </svg>
       )}
       <span style={{
-        fontFamily: "'Inter', sans-serif",
-        fontWeight: 700,
+        fontFamily: "var(--font-display)",
+        fontWeight: 400,
         fontSize: s.text,
-        color: "#111827",
+        color: "var(--text-primary)",
         lineHeight: 1,
-        letterSpacing: "-0.5px",
+        letterSpacing: "-0.3px",
       }}>
-        Khicho<span style={{ color: "#6366f1" }}>.</span><span style={{ color: "#6366f1" }}>AI</span>
+        Khicho
       </span>
     </div>
   );

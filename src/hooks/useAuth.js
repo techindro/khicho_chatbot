@@ -10,7 +10,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const login = useCallback(async ({ email, password }) => {
+  const login = useCallback(async ({ email, password: _password }) => {
     setLoading(true);
     setError(null);
     try {
@@ -40,7 +40,7 @@ export function useAuth() {
     }
   }, []);
 
-  const signup = useCallback(async ({ name, email, password }) => {
+  const signup = useCallback(async ({ name, email, password: _password }) => {
     setLoading(true);
     setError(null);
     try {

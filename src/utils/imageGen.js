@@ -2,13 +2,11 @@ import { HfInference } from "@huggingface/inference";
 
 /**
  * Khicho.AI — Image Generation Utilities
- * Primary: Pollinations.AI (free, no token needed)
- * Fallback: HuggingFace FLUX.1-schnell
+ * Text-to-image: Pollinations.AI (free, no token needed)
+ * Image-to-image: HuggingFace stable-diffusion-2-1
  */
 
-const HF_MODEL = "black-forest-labs/FLUX.1-schnell";
-const HF_IMG2IMG_MODEL = "stabilityai/stable-diffusion-2-1"; // Changed from runwayml/stable-diffusion-v1-5 due to no provider
-const HF_API   = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+const HF_IMG2IMG_MODEL = "stabilityai/stable-diffusion-2-1";
 
 /**
  * Generate Image-to-Image using HuggingFace Inference SDK
@@ -35,48 +33,57 @@ export const generateImageToImage = async (imageBlob, prompt, hfToken) => {
   }
 };
 
+const buildPollinationsUrl = (prompt, seed) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
+
+/**
+ * Verify image exists via fetch, return the persistent Pollinations URL
+ */
+const verifyAndGetUrl = async (url, timeoutMs = 120000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Failed to generate image (${response.status})`);
+    }
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error("Invalid image response from server");
+    }
+    return url;
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Image generation timed out — try again");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 /**
  * Generate image using Pollinations.AI (primary — free, no auth)
- * Falls back to HuggingFace if hfToken is provided and Pollinations fails
+ * Verifies the image loaded and retries on failure
  */
-export const generateImage = async (prompt, hfToken) => {
-  // Primary: Pollinations.AI — free, no auth, works directly as img src
-  const seed = Math.floor(Math.random() * 999999);
-  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux`;
+export const generateImage = async (prompt, index = 0) => {
+  const baseSeed = Date.now() + index * 9973 + Math.floor(Math.random() * 10000);
+  const maxRetries = 3;
 
-  // Return the URL directly — img tags load it without CORS issues
-  return pollinationsUrl;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const seed = baseSeed + attempt * 50000;
+    const url = buildPollinationsUrl(prompt, seed);
 
-  // Fallback: HuggingFace API (needs valid token)
-  if (!hfToken) {
-    throw new Error("Image generation failed — please try again");
+    try {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
+      return await verifyAndGetUrl(url);
+    } catch (err) {
+      if (attempt === maxRetries - 1) throw err;
+    }
   }
-
-  const res = await fetch(HF_API, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${hfToken}`,
-      "Content-Type": "application/json",
-      "x-wait-for-model": "true",
-    },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: { num_inference_steps: 4 }
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = err?.error || `Error ${res.status}`;
-
-    if (res.status === 401) throw new Error("Invalid HF token — check your .env file");
-    if (res.status === 503) throw new Error("Model is loading — retry in 30 seconds");
-    if (res.status === 429) throw new Error("Rate limited — wait a moment and try again");
-    throw new Error(msg);
-  }
-
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
 };
 
 /**

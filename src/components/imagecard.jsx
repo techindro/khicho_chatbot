@@ -5,6 +5,7 @@ import { STYLES } from "../constants";
 export default function ImageCard({ item, onDelete }) {
   const [hov, setHov] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const style = STYLES.find((s) => s.id === item.style);
 
@@ -97,6 +98,36 @@ export default function ImageCard({ item, onDelete }) {
     );
   }
 
+  // ── DONE but image failed to load ──
+  if (imgError) {
+    return (
+      <article style={{
+        borderRadius: "14px", overflow: "hidden",
+        border: "1px solid var(--border)", background: "var(--surface)",
+      }}>
+        <div style={{
+          aspectRatio: "1", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: "10px",
+          padding: "20px", background: "rgba(239, 68, 68, 0.05)",
+        }}>
+          <span style={{ fontSize: "28px" }}>⚠️</span>
+          <p style={{ color: "var(--error)", fontSize: "13px", textAlign: "center", margin: 0 }}>
+            Image failed to load
+          </p>
+        </div>
+        <div style={{ padding: "10px 12px", display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border)" }}>
+          {onDelete && (
+            <button onClick={() => onDelete(item.id)} style={{
+              background: "rgba(239, 68, 68, 0.1)", border: "none",
+              color: "var(--error)", padding: "4px 12px", borderRadius: "6px",
+              cursor: "pointer", fontSize: "12px",
+            }}>Remove</button>
+          )}
+        </div>
+      </article>
+    );
+  }
+
   // ── DONE STATE ──
   return (
     <article
@@ -115,6 +146,7 @@ export default function ImageCard({ item, onDelete }) {
         <img
           src={item.url}
           alt={item.prompt}
+          onError={() => setImgError(true)}
           style={{
             width: "100%", height: "100%",
             objectFit: "cover", display: "block",
