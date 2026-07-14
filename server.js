@@ -96,6 +96,33 @@ app.post("/api/pollinations/generate", async (req, res) => {
   console.log(`[pollinations] generating: ${prompt.slice(0, 40)}... hasImage=${!!imageBase64}`);
 
   try {
+    let imageUrl = "";
+    if (imageBase64) {
+      try {
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        
+        const uploadForm = new FormData();
+        const blob = new Blob([buffer], { type: "image/jpeg" });
+        uploadForm.append("files[]", blob, "photo.jpg");
+
+        const uploadRes = await fetch("https://qu.ax/upload.php", {
+          method: "POST",
+          body: uploadForm
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.success && uploadData.files?.[0]?.url) {
+            imageUrl = uploadData.files[0].url;
+            console.log(`[pollinations] uploaded reference to: ${imageUrl}`);
+          }
+        }
+      } catch (uploadErr) {
+        console.warn("Failed to upload reference to qu.ax:", uploadErr.message);
+      }
+    }
+
     const finalPrompt = imageBase64
       ? `a detailed portrait photo of the person, styled as: ${prompt}, preserving the exact facial features, hair, head pose, and expression of the person`
       : prompt;
@@ -111,8 +138,8 @@ app.post("/api/pollinations/generate", async (req, res) => {
       nocache: Date.now().toString()
     });
 
-    if (imageBase64) {
-      queryParams.append("image", imageBase64);
+    if (imageUrl) {
+      queryParams.append("image", imageUrl);
     }
 
     const url = `${baseUrl}?${queryParams.toString()}`;
