@@ -1,11 +1,13 @@
 services:
   - type: web
     name: khicho-chatbot
-    runtime: static
+    runtime: node
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    routes:
-      # SPA rewrite rule to route all frontend paths to index.html
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RUNWAY_API_KEY
+        sync: false
+      - key: VITE_IDEOGRAM_API_KEY
+        sync: false

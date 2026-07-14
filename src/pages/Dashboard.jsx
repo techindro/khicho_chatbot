@@ -263,7 +263,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
       try {
         let url;
         if (uploadedImage) {
-          url = await generateImageToImage(uploadedImage, fullPrompt, hfToken);
+          url = await generateImageToImage(uploadedImage, fullPrompt, hfToken, aspectRatio);
         } else {
           url = await generateImage(fullPrompt, i, currentTier, ideogramApiKey, aspectRatio);
         }

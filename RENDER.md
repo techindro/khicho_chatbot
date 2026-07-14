@@ -1,6 +1,6 @@
-# Deploying to Render
+# Deploying to Render (Node.js Web Service)
 
-This project is configured to deploy to Render as a **Static Site** using the Blueprint configuration in `render.yaml`.
+This project is now configured as a **Node.js Web Service** using the Blueprint configuration in `render.yaml`. This enables the backend proxy (`server.js`) to securely communicate with the RunwayML API, handling task polling and avoiding CORS issues.
 
 ## Prerequisites
 
@@ -14,23 +14,20 @@ Before deploying, make sure you have:
 1. Log in to the [Render Dashboard](https://dashboard.render.com).
 2. Click **New** in the top right corner and select **Blueprint**.
 3. Connect your repository (`khicho_chatbot`).
-4. Render will automatically detect the `render.yaml` file in the root of your repository and display the configuration details.
+4. Render will automatically detect the `render.yaml` file in the root of your repository and configure the Web Service.
 
-### Step 2: Configure Environment Variables (Optional)
-Both API keys are **completely optional** for the application to build and run:
-- **If you do not provide keys**: The application will automatically fall back to using **Pollinations.AI** (which is completely free and requires no API key or setup) for text-to-image generation.
-- **If you want premium features**: 
-  - Provide `VITE_IDEOGRAM_API_KEY` to enable the high-quality Ideogram model (for paid tiers).
-  - Provide `VITE_HF_TOKEN` to enable the reference image-to-image generation feature.
-
-To add these keys:
-1. Go to your Static Site service dashboard in Render.
+### Step 2: Configure Environment Variables
+To enable RunwayML and Ideogram features, set the following environment variables in your Render Dashboard:
+1. Go to your Web Service dashboard in Render.
 2. Go to **Environment** settings.
-3. Add `VITE_HF_TOKEN` and/or `VITE_IDEOGRAM_API_KEY` with their respective values.
-4. Click **Save Changes** (Render will automatically trigger a rebuild with the new variables).
+3. Add the following environment variables:
+   - `RUNWAY_API_KEY`: Your RunwayML API key (`key_...`). Required for high-quality Image-to-Image capabilities.
+   - `VITE_IDEOGRAM_API_KEY`: (Optional) Your Ideogram API Key for premium text-to-image tier features.
+
+4. Click **Save Changes**. Render will automatically trigger a rebuild and redeployment of the web service.
 
 ### Step 3: Verify and Access
-Once the build is complete:
-1. Render will host your site on a free `onrender.com` subdomain (e.g., `khicho-chatbot.onrender.com`).
+Once the build and deployment are complete:
+1. Render will host your Node.js application on a free `onrender.com` subdomain (e.g., `khicho-chatbot.onrender.com`).
 2. You can access the live URL from the service page in your dashboard.
-3. Client-side routing is handled automatically via Render rewrite rules (mapping all paths to `index.html`).
+3. The server will dynamically serve the built React static files and handle API routing seamlessly.

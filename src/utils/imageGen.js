@@ -21,46 +21,44 @@ const blobToDataUrl = (blob) => {
  * Generate Image-to-Image using Pollinations.AI with reference image
  * Uses the kontext model which supports image editing via URL reference
  */
-export const generateImageToImage = async (imageBlob, prompt, _hfToken) => {
+export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRatio = "1:1") => {
   try {
     // Convert blob to data URL for upload
     const dataUrl = await blobToDataUrl(imageBlob);
 
-    // Use Pollinations OpenAI-compatible endpoint for image editing
-    const response = await fetch("https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt + ", high quality, detailed") + "?width=512&height=512&nologo=true&enhance=true&model=flux&seed=" + Math.floor(Math.random() * 999999) + "&nocache=" + Date.now(), {
-      method: "GET",
+    // Call the express backend proxy endpoint for RunwayML
+    const ratioStr = aspectRatio === "16:9" ? "1280:720" : 
+                     aspectRatio === "9:16" ? "720:1280" : 
+                     aspectRatio === "3:4" ? "768:1024" : 
+                     aspectRatio === "4:5" ? "1024:1280" : "1024:1024";
+
+    const response = await fetch("/api/runway/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+        imageBase64: dataUrl,
+        ratio: ratioStr,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Image generation failed: ${response.statusText}`);
+      const errData = await response.json();
+      throw new Error(errData.error || `Runway generation failed: ${response.statusText}`);
     }
 
-    const resultBlob = await response.blob();
-    return URL.createObjectURL(resultBlob);
+    const result = await response.json();
+    return result.url;
   } catch (error) {
-    // Fallback: generate with just the prompt (ignoring the reference image)
+    console.error("RunwayML generation failed, falling back to Pollinations:", error);
+    // Fallback: generate with just the prompt using Pollinations
     const seed = Math.floor(Math.random() * 999999);
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ", high quality, detailed")}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
+    const { width, height } = getDimensionsFromAspectRatio(aspectRatio);
+    const url = buildPollinationsUrl(prompt, seed, width, height);
     
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const timer = setTimeout(() => {
-        img.src = "";
-        reject(new Error("Image generation timed out — try again"));
-      }, 120000);
-
-      img.onload = () => {
-        clearTimeout(timer);
-        resolve(url);
-      };
-
-      img.onerror = () => {
-        clearTimeout(timer);
-        reject(new Error("Failed to generate image"));
-      };
-
-      img.src = url;
-    });
+    return await verifyAndGetUrl(url);
   }
 };
 

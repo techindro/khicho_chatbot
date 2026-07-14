@@ -27,6 +27,10 @@ export default defineConfig({
         target: 'https://api-inference.huggingface.co',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-huggingface/, ''),
+      },
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
       }
     }
   },
