@@ -5,7 +5,7 @@ import { STYLES, SUGGESTIONS } from "../constants";
 import { createImageJob, validatePrompt, generateImage, generateImageToImage, buildPrompt, downloadImage } from "@utils/imageGen";
 import {
   Home, Compass, Sparkles, Archive, ImagePlus, X, LogOut, Sun, Moon, Settings2, CreditCard,
-  Film, Play, Pause, RefreshCw, Volume2
+  Film, Play, Pause, RefreshCw, Volume2, Download, Copy, Dices, Wand2, Square, Tv, Smartphone, Image
 } from "lucide-react";
 
 const ENHANCERS = {
@@ -588,7 +588,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                       e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                   >
-                    📥 Save All
+                    <Download size={12} /> Save All
                   </button>
                 )}
               </div>
@@ -1095,10 +1095,10 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
               const randomIndex = Math.floor(Math.random() * SUGGESTIONS.length);
               setPrompt(SUGGESTIONS[randomIndex]);
             }} title="Get a random prompt suggestion">
-              🎲 Surprise Me
+              <Dices size={14} /> Surprise Me
             </button>
             <button className="mj-prompt-btn" onClick={handleEnhancePrompt} title="Enhance prompt with cinematic style modifiers">
-              🪄 Enhance
+              <Wand2 size={14} /> Enhance
             </button>
             <button
               className={`mj-prompt-btn ${showSettings ? "active" : ""}`}
@@ -1128,9 +1128,20 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                       key={ratio}
                       className={`mj-prompt-btn ${aspectRatio === ratio ? "active" : ""}`}
                       onClick={() => setAspectRatio(ratio)}
-                      style={{ fontSize: "11px", padding: "4px 8px" }}
+                      style={{ 
+                        fontSize: "11px", 
+                        padding: "4px 8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}
                     >
-                      {ratio === "1:1" ? "⬜ 1:1" : ratio === "16:9" ? "📺 16:9" : ratio === "9:16" ? "📱 9:16" : ratio === "3:4" ? "📷 3:4" : "🖼️ 4:5"}
+                      {ratio === "1:1" && <Square size={12} />}
+                      {ratio === "16:9" && <Tv size={12} />}
+                      {ratio === "9:16" && <Smartphone size={12} />}
+                      {ratio === "3:4" && <Image size={12} />}
+                      {ratio === "4:5" && <Image size={12} />}
+                      {ratio}
                     </button>
                   ))}
                 </div>
@@ -1297,10 +1308,14 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                       borderRadius: "10px",
                       fontWeight: 600,
                       fontSize: "13px",
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px"
                     }}
                   >
-                    📥 Download High-Res
+                    <Download size={14} /> Download High-Res
                   </button>
                   <button
                     onClick={handleModalCopy}
@@ -1312,10 +1327,18 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                       borderRadius: "10px",
                       cursor: "pointer",
                       fontSize: "13px",
-                      fontWeight: 600
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px"
                     }}
                   >
-                    {modalCopied ? "✓ Copied" : "📋 Copy Prompt"}
+                    {modalCopied ? (
+                      <>✓ Copied</>
+                    ) : (
+                      <><Copy size={14} /> Copy Prompt</>
+                    )}
                   </button>
                 </div>
               </div>
