@@ -8,8 +8,9 @@ const dataUrlFromBlob = (blob) => {
 };
 
 export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRatio = "1:1") => {
+  const dataUrl = await dataUrlFromBlob(imageBlob);
+
   try {
-    const dataUrl = await dataUrlFromBlob(imageBlob);
     const ratioStr = aspectRatio === "16:9" ? "1280:720" : 
                      aspectRatio === "9:16" ? "720:1280" : 
                      aspectRatio === "3:4" ? "768:1024" : 
@@ -21,16 +22,38 @@ export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRa
       body: JSON.stringify({ prompt, imageBase64: dataUrl, ratio: ratioStr })
     });
 
-    if (!res.ok) {
+    if (res.ok) {
       const data = await res.json();
-      throw new Error(data.error || "Runway error");
+      return data.url;
+    }
+
+    const errData = await res.json().catch(() => ({}));
+    console.warn("Runway failed, using free high-quality fallback:", errData.error || res.statusText);
+  } catch (err) {
+    console.warn("Runway connection failed, using free high-quality fallback:", err);
+  }
+
+  // Free high-quality fallback: Pollinations.AI with image guide parameter
+  try {
+    const { width, height } = getSizes(aspectRatio);
+    const seed = Math.floor(Math.random() * 999999);
+
+    const res = await fetch("/api/pollinations/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, imageBase64: dataUrl, width, height, seed })
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Generation failed");
     }
 
     const data = await res.json();
     return data.url;
-  } catch (err) {
-    console.error(err);
-    throw err;
+  } catch (fallbackErr) {
+    console.error("Free fallback failed:", fallbackErr);
+    throw new Error("Image generation failed — check your internet connection.");
   }
 };
 

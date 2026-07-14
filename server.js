@@ -86,6 +86,40 @@ app.post("/api/runway/generate", async (req, res) => {
   }
 });
 
+app.post("/api/pollinations/generate", async (req, res) => {
+  const { prompt, imageBase64, width = 512, height = 512, seed = 42 } = req.body;
+  if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+
+  try {
+    const baseUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
+    const queryParams = new URLSearchParams({
+      width: width.toString(),
+      height: height.toString(),
+      seed: seed.toString(),
+      nologo: "true",
+      enhance: "true",
+      model: "flux",
+      nocache: Date.now().toString()
+    });
+
+    if (imageBase64) {
+      queryParams.append("image", imageBase64);
+    }
+
+    const url = `${baseUrl}?${queryParams.toString()}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(response.status).json({ error: `Pollinations error: ${err}` });
+    }
+
+    return res.json({ success: true, url });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // serve static build
 const dist = path.join(__dirname, "dist");
 app.use(express.static(dist));
