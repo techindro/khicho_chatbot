@@ -22,6 +22,11 @@ export default defineConfig({
         target: 'https://api.ideogram.ai',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-ideogram/, ''),
+      },
+      '/api-huggingface': {
+        target: 'https://api-inference.huggingface.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-huggingface/, ''),
       }
     }
   },

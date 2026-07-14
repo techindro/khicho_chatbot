@@ -6,27 +6,63 @@ import { HfInference } from "@huggingface/inference";
  * Image-to-image: HuggingFace stable-diffusion-2-1
  */
 
-const HF_IMG2IMG_MODEL = "stabilityai/stable-diffusion-2-1";
+const HF_IMG2IMG_MODEL = "runwayml/stable-diffusion-v1-5";
+
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 /**
- * Generate Image-to-Image using HuggingFace Inference SDK
+ * Generate Image-to-Image using HuggingFace Inference API directly (REST)
  */
 export const generateImageToImage = async (imageBlob, prompt, hfToken) => {
   if (!hfToken) {
     throw new Error("Image-to-Image requires a valid HuggingFace Token");
   }
   
-  const hf = new HfInference(hfToken);
-  
   try {
-    const resultBlob = await hf.imageToImage({
-      model: HF_IMG2IMG_MODEL,
-      inputs: imageBlob,
-      parameters: {
-        prompt: prompt,
-        strength: 0.75, // Controls how much to change the original image (0.0 to 1.0)
-      }
+    const base64Image = await blobToBase64(imageBlob);
+    
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const hfEndpoint = isLocal
+      ? `/api-huggingface/models/${HF_IMG2IMG_MODEL}`
+      : `https://api-inference.huggingface.co/models/${HF_IMG2IMG_MODEL}`;
+
+    const response = await fetch(hfEndpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${hfToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inputs: base64Image,
+        parameters: {
+          prompt: prompt,
+          strength: 0.75, // Controls how much to change the original image (0.0 to 1.0)
+        }
+      })
     });
+    
+    if (!response.ok) {
+      const errText = await response.text();
+      let parsedError;
+      try {
+        parsedError = JSON.parse(errText);
+      } catch {
+        parsedError = { error: errText };
+      }
+      throw new Error(parsedError.error || `HuggingFace API failed: ${response.statusText}`);
+    }
+    
+    const resultBlob = await response.blob();
     return URL.createObjectURL(resultBlob);
   } catch (error) {
     throw new Error(error.message || "Failed to transform image");
