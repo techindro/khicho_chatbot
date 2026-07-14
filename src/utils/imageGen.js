@@ -1,14 +1,4 @@
-/**
- * Khicho.AI — Image Generation Utilities
- * Text-to-image: Pollinations.AI (free, no token needed)
- * Image-to-image: Pollinations.AI with reference image (free, no token needed)
- */
-
-/**
- * Upload image to a temporary hosting service and get a public URL.
- * Uses Pollinations' ability to accept reference images via the `image` query param.
- */
-const blobToDataUrl = (blob) => {
+const dataUrlFromBlob = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result);
@@ -17,67 +7,51 @@ const blobToDataUrl = (blob) => {
   });
 };
 
-/**
- * Generate Image-to-Image using Pollinations.AI with reference image
- * Uses the kontext model which supports image editing via URL reference
- */
 export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRatio = "1:1") => {
   try {
-    // Convert blob to data URL for upload
-    const dataUrl = await blobToDataUrl(imageBlob);
-
-    // Call the express backend proxy endpoint for RunwayML
+    const dataUrl = await dataUrlFromBlob(imageBlob);
     const ratioStr = aspectRatio === "16:9" ? "1280:720" : 
                      aspectRatio === "9:16" ? "720:1280" : 
                      aspectRatio === "3:4" ? "768:1024" : 
                      aspectRatio === "4:5" ? "1024:1280" : "1024:1024";
 
-    const response = await fetch("/api/runway/generate", {
+    const res = await fetch("/api/runway/generate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        imageBase64: dataUrl,
-        ratio: ratioStr,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, imageBase64: dataUrl, ratio: ratioStr })
     });
 
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error || `Runway generation failed: ${response.statusText}`);
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Runway error");
     }
 
-    const result = await response.json();
-    return result.url;
-  } catch (error) {
-    console.error("RunwayML generation failed:", error);
-    throw error;
+    const data = await res.json();
+    return data.url;
+  } catch (err) {
+    console.error(err);
+    throw err;
   }
 };
 
-const getDimensionsFromAspectRatio = (ratio) => {
+const getSizes = (ratio) => {
   if (ratio === "16:9") return { width: 768, height: 432 };
   if (ratio === "9:16") return { width: 432, height: 768 };
   if (ratio === "3:4")  return { width: 480, height: 640 };
   if (ratio === "4:5")  return { width: 512, height: 640 };
-  return { width: 512, height: 512 }; // Default 1:1
+  return { width: 512, height: 512 };
 };
 
-const buildPollinationsUrl = (prompt, seed, width = 512, height = 512) =>
-  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
+const pollinationsUrl = (prompt, seed, w, h) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
 
-/**
- * Verify image exists via fetch, return the persistent Pollinations URL
- */
-const verifyAndGetUrl = (url, timeoutMs = 120000) => {
+const checkImageUrl = (url) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const timer = setTimeout(() => {
       img.src = "";
-      reject(new Error("Image generation timed out — try again"));
-    }, timeoutMs);
+      reject(new Error("Timeout loading image"));
+    }, 120000);
 
     img.onload = () => {
       clearTimeout(timer);
@@ -86,18 +60,14 @@ const verifyAndGetUrl = (url, timeoutMs = 120000) => {
 
     img.onerror = () => {
       clearTimeout(timer);
-      reject(new Error("Failed to generate image (check connection)"));
+      reject(new Error("Failed to load image"));
     };
 
     img.src = url;
   });
 };
 
-/**
- * Generate image using Ideogram (if subscribed) or Pollinations.AI (free backup)
- */
 export const generateImage = async (prompt, index = 0, currentTier = "Free", ideogramApiKey = "", aspectRatio = "1:1") => {
-  // If user is on a paid tier and we have an Ideogram key, call Ideogram
   if (currentTier !== "Free" && ideogramApiKey) {
     try {
       const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -116,73 +86,56 @@ export const generateImage = async (prompt, index = 0, currentTier = "Free", ide
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Ideogram API failed: ${res.statusText || errText}`);
+        const text = await res.text();
+        throw new Error(text);
       }
 
       const data = await res.json();
-      if (data && data.data && data.data[0] && data.data[0].url) {
+      if (data?.data?.[0]?.url) {
         return data.data[0].url;
-      } else {
-        throw new Error("No image data returned from Ideogram");
       }
+      throw new Error("No image URL returned");
     } catch (err) {
-      console.warn("Ideogram generation failed, falling back to Pollinations:", err);
+      console.warn("Ideogram failed, falling back to Pollinations:", err);
     }
   }
 
-  // Pollinations.AI Free Tier / Fallback Logic
-  const { width, height } = getDimensionsFromAspectRatio(aspectRatio);
+  const { width, height } = getSizes(aspectRatio);
   const baseSeed = Date.now() + index * 9973 + Math.floor(Math.random() * 10000);
-  const maxRetries = 3;
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const seed = baseSeed + attempt * 50000;
-    const url = buildPollinationsUrl(prompt, seed, width, height);
+  for (let i = 0; i < 3; i++) {
+    const seed = baseSeed + i * 50000;
+    const url = pollinationsUrl(prompt, seed, width, height);
 
     try {
-      if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, 2000 * attempt));
-      }
-      return await verifyAndGetUrl(url);
+      if (i > 0) await new Promise(r => setTimeout(r, 2000 * i));
+      return await checkImageUrl(url);
     } catch (err) {
-      if (attempt === maxRetries - 1) throw err;
+      if (i === 2) throw err;
     }
   }
 };
 
-/**
- * Create an image job placeholder
- */
-export const createImageJob = (promptText, style, index = 0, aspectRatio = "1:1") => ({
+export const createImageJob = (prompt, style, index = 0, aspectRatio = "1:1") => ({
   id: `${Date.now()}-${index}`,
-  prompt: promptText,
+  prompt,
   style: style.id,
   styleLabel: style.label,
   styleIcon: style.icon,
-  aspectRatio: aspectRatio,
+  aspectRatio,
   url: null,
   createdAt: new Date().toISOString(),
-  status: "generating", // "generating" | "done" | "error"
-  error: null,
+  status: "generating",
+  error: null
 });
 
-/**
- * Build full prompt with style tag
- */
 export const buildPrompt = (promptText, style) =>
   `${promptText}, ${style.tag}, high quality, detailed`;
 
-/**
- * Generate a static URL from Pollinations.AI for the hero section
- */
-export const buildImageUrl = (p, s, w=512, h=512) =>
-  `https://image.pollinations.ai/prompt/${encodeURIComponent(p+", high quality, detailed, masterpiece")}?width=${w}&height=${h}&seed=${s||Math.random()*999999|0}&nologo=true&enhance=true`;
+export const buildImageUrl = (p, s, w = 512, h = 512) =>
+  `https://image.pollinations.ai/prompt/${encodeURIComponent(p + ", high quality, detailed, masterpiece")}?width=${w}&height=${h}&seed=${s || (Math.random() * 999999 | 0)}&nologo=true&enhance=true`;
 
-/**
- * Download image
- */
-export const downloadImage = async (url, filename = "khicho-ai.jpg") => {
+export const downloadImage = async (url, filename = "download.jpg") => {
   try {
     const a = document.createElement("a");
     a.href = url;
@@ -193,13 +146,10 @@ export const downloadImage = async (url, filename = "khicho-ai.jpg") => {
   }
 };
 
-/**
- * Validate prompt
- */
 export const validatePrompt = (prompt) => {
   const trimmed = prompt?.trim() ?? "";
-  if (!trimmed)           return { valid: false, error: "Please enter a prompt" };
-  if (trimmed.length < 3) return { valid: false, error: "Prompt too short — describe in more detail" };
-  if (trimmed.length > 500) return { valid: false, error: "Prompt too long — keep it under 500 characters" };
+  if (!trimmed) return { valid: false, error: "Please enter a prompt" };
+  if (trimmed.length < 3) return { valid: false, error: "Prompt too short" };
+  if (trimmed.length > 500) return { valid: false, error: "Prompt too long" };
   return { valid: true };
 };

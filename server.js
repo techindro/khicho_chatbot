@@ -5,131 +5,98 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Parse JSON bodies up to 10MB (for base64 image uploads)
 app.use(express.json({ limit: "10mb" }));
 
-// ─── RunwayML API Proxy ────────────────────────────────────────────────
+const RUNWAY_KEY = process.env.RUNWAY_API_KEY;
+const RUNWAY_URL = "https://api.dev.runwayml.com/v1";
 
-const RUNWAY_API_KEY = process.env.RUNWAY_API_KEY;
-const RUNWAY_BASE_URL = "https://api.dev.runwayml.com/v1";
-
-/**
- * POST /api/runway/generate
- * Body: { prompt, imageBase64? (data URI), ratio? }
- * 
- * Submits a task to RunwayML, polls until done, returns the output URL.
- */
 app.post("/api/runway/generate", async (req, res) => {
-  if (!RUNWAY_API_KEY) {
-    return res.status(500).json({ error: "RunwayML API key not configured on server" });
+  if (!RUNWAY_KEY) {
+    return res.status(500).json({ error: "Runway key not found on server" });
   }
 
   const { prompt, imageBase64, ratio = "1024:1024" } = req.body;
-
   if (!prompt) {
-    return res.status(400).json({ error: "Prompt is required" });
+    return res.status(400).json({ error: "Missing prompt" });
   }
 
   try {
-    // Step 1: Submit the task
-    const taskBody = {
+    const payload = {
       model: "gen4_image",
       promptText: imageBase64 ? `@ref styled as ${prompt}` : prompt,
-      ratio: ratio,
-      referenceImages: imageBase64 ? [
-        {
-          uri: imageBase64,
-          tag: "ref"
-        }
-      ] : [],
+      ratio,
+      referenceImages: imageBase64 ? [{ uri: imageBase64, tag: "ref" }] : []
     };
 
-    console.log(`[RunwayML] Submitting task: model=gen4_image, prompt="${taskBody.promptText.substring(0, 50)}...", hasImage=${!!imageBase64}`);
+    console.log(`[runway] generating: ${prompt.slice(0, 30)}...`);
 
-    const createRes = await fetch(`${RUNWAY_BASE_URL}/text_to_image`, {
+    const initRes = await fetch(`${RUNWAY_URL}/text_to_image`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${RUNWAY_API_KEY}`,
-        "X-Runway-Version": "2024-11-06",
+        "Authorization": `Bearer ${RUNWAY_KEY}`,
+        "X-Runway-Version": "2024-11-06"
       },
-      body: JSON.stringify(taskBody),
+      body: JSON.stringify(payload)
     });
 
-    if (!createRes.ok) {
-      const errText = await createRes.text();
-      console.error(`[RunwayML] Task creation failed: ${createRes.status} ${errText}`);
-      return res.status(createRes.status).json({ error: `RunwayML error: ${errText}` });
+    if (!initRes.ok) {
+      const err = await initRes.text();
+      return res.status(initRes.status).json({ error: `Runway API error: ${err}` });
     }
 
-    const taskData = await createRes.json();
-    const taskId = taskData.id;
-    console.log(`[RunwayML] Task created: ${taskId}`);
+    const task = await initRes.json();
+    const taskId = task.id;
 
-    // Step 2: Poll for completion (max 120 seconds)
-    const maxPolls = 60;
-    const pollInterval = 2000; // 2 seconds
+    // poll for task result (max 2 mins)
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 2000));
 
-    for (let i = 0; i < maxPolls; i++) {
-      await new Promise((r) => setTimeout(r, pollInterval));
-
-      const statusRes = await fetch(`${RUNWAY_BASE_URL}/tasks/${taskId}`, {
+      const poll = await fetch(`${RUNWAY_URL}/tasks/${taskId}`, {
         headers: {
-          "Authorization": `Bearer ${RUNWAY_API_KEY}`,
-          "X-Runway-Version": "2024-11-06",
-        },
+          "Authorization": `Bearer ${RUNWAY_KEY}`,
+          "X-Runway-Version": "2024-11-06"
+        }
       });
 
-      if (!statusRes.ok) {
-        console.error(`[RunwayML] Poll failed: ${statusRes.status}`);
-        continue;
+      if (!poll.ok) continue;
+
+      const result = await poll.json();
+      console.log(`[runway] status: ${result.status} (attempt ${i + 1})`);
+
+      if (result.status === "SUCCEEDED") {
+        const url = result.output?.[0];
+        if (url) return res.json({ success: true, url });
+        return res.status(500).json({ error: "Output URL empty" });
       }
 
-      const statusData = await statusRes.json();
-      console.log(`[RunwayML] Task ${taskId} status: ${statusData.status} (poll ${i + 1})`);
-
-      if (statusData.status === "SUCCEEDED") {
-        const outputUrl = statusData.output?.[0] || null;
-        if (outputUrl) {
-          return res.json({ success: true, url: outputUrl });
-        }
-        return res.status(500).json({ error: "Task succeeded but no output URL found" });
+      if (result.status === "FAILED") {
+        return res.status(500).json({ error: result.failure || "Generation failed" });
       }
-
-      if (statusData.status === "FAILED") {
-        return res.status(500).json({ error: statusData.failure || "RunwayML generation failed" });
-      }
-
-      // THROTTLED, PENDING, RUNNING → keep polling
     }
 
-    return res.status(504).json({ error: "RunwayML task timed out after 120 seconds" });
+    return res.status(504).json({ error: "Task timed out" });
   } catch (err) {
-    console.error("[RunwayML] Server error:", err);
-    return res.status(500).json({ error: err.message || "Server error" });
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 });
 
-// ─── Serve Vite-built frontend ─────────────────────────────────────────
+// serve static build
+const dist = path.join(__dirname, "dist");
+app.use(express.static(dist));
 
-const distPath = path.join(__dirname, "dist");
-app.use(express.static(distPath));
-
-// SPA fallback: all non-API routes → index.html
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ error: "API endpoint not found" });
+    return res.status(404).json({ error: "API route not found" });
   }
-  res.sendFile(path.join(distPath, "index.html"));
+  res.sendFile(path.join(dist, "index.html"));
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🚀 Khicho.AI server running on http://localhost:${PORT}`);
-  console.log(`   RunwayML API: ${RUNWAY_API_KEY ? "✅ Configured" : "❌ Missing RUNWAY_API_KEY"}`);
+  console.log(`Server running on port ${PORT}`);
 });
