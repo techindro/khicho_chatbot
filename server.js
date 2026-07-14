@@ -165,7 +165,20 @@ app.get("/api/download", async (req, res) => {
     if (!response.ok) throw new Error("Failed to fetch image");
 
     const contentType = response.headers.get("content-type") || "image/jpeg";
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    
+    // Enforce clean .jpg or .png extension matching the image content type
+    let cleanFilename = filename;
+    if (contentType.includes("png")) {
+      if (!cleanFilename.endsWith(".png")) {
+        cleanFilename = cleanFilename.replace(/\.[^/.]+$/, "") + ".png";
+      }
+    } else {
+      if (!cleanFilename.endsWith(".jpg") && !cleanFilename.endsWith(".jpeg")) {
+        cleanFilename = cleanFilename.replace(/\.[^/.]+$/, "") + ".jpg";
+      }
+    }
+
+    res.setHeader("Content-Disposition", `attachment; filename="${cleanFilename}"`);
     res.setHeader("Content-Type", contentType);
 
     const arrayBuffer = await response.arrayBuffer();
