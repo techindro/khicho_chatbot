@@ -7,8 +7,29 @@ const dataUrlFromBlob = (blob) => {
   });
 };
 
+const compressImage = (blob, maxSize = 256) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+    img.src = url;
+  });
+};
+
 export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRatio = "1:1") => {
-  const dataUrl = await dataUrlFromBlob(imageBlob);
+  const thumbDataUrl = await compressImage(imageBlob, 256);
 
   try {
     const ratioStr = aspectRatio === "16:9" ? "1280:720" : 
@@ -19,7 +40,7 @@ export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRa
     const res = await fetch("/api/runway/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, imageBase64: dataUrl, ratio: ratioStr })
+      body: JSON.stringify({ prompt, imageBase64: thumbDataUrl, ratio: ratioStr })
     });
 
     if (res.ok) {
@@ -28,33 +49,28 @@ export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRa
     }
 
     const errData = await res.json().catch(() => ({}));
-    console.warn("Runway failed, using free high-quality fallback:", errData.error || res.statusText);
+    console.warn("Runway failed, using free fallback:", errData.error || res.statusText);
   } catch (err) {
-    console.warn("Runway connection failed, using free high-quality fallback:", err);
+    console.warn("Runway unavailable, using free fallback:", err.message);
   }
 
-  // Free high-quality fallback: Pollinations.AI with image guide parameter
-  try {
-    const { width, height } = getSizes(aspectRatio);
-    const seed = Math.floor(Math.random() * 999999);
+  // Free fallback: Pollinations.AI with compressed image guide
+  const { width, height } = getSizes(aspectRatio);
+  const seed = Math.floor(Math.random() * 999999);
 
-    const res = await fetch("/api/pollinations/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, imageBase64: dataUrl, width, height, seed })
-    });
+  const res = await fetch("/api/pollinations/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, imageBase64: thumbDataUrl, width, height, seed })
+  });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Generation failed");
-    }
-
-    const data = await res.json();
-    return data.url;
-  } catch (fallbackErr) {
-    console.error("Free fallback failed:", fallbackErr);
-    throw new Error("Image generation failed — check your internet connection.");
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Generation failed");
   }
+
+  const data = await res.json();
+  return data.url;
 };
 
 const getSizes = (ratio) => {

@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
 
 const RUNWAY_KEY = process.env.RUNWAY_API_KEY;
 const RUNWAY_URL = "https://api.dev.runwayml.com/v1";
@@ -89,6 +89,7 @@ app.post("/api/runway/generate", async (req, res) => {
 app.post("/api/pollinations/generate", async (req, res) => {
   const { prompt, imageBase64, width = 512, height = 512, seed = 42 } = req.body;
   if (!prompt) return res.status(400).json({ error: "Missing prompt" });
+  console.log(`[pollinations] generating: ${prompt.slice(0, 40)}... hasImage=${!!imageBase64}`);
 
   try {
     const baseUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
