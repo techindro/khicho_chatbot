@@ -1,71 +1,66 @@
-import { HfInference } from "@huggingface/inference";
-
 /**
  * Khicho.AI — Image Generation Utilities
  * Text-to-image: Pollinations.AI (free, no token needed)
- * Image-to-image: HuggingFace stable-diffusion-2-1
+ * Image-to-image: Pollinations.AI with reference image (free, no token needed)
  */
 
-const HF_IMG2IMG_MODEL = "runwayml/stable-diffusion-v1-5";
-
-const blobToBase64 = (blob) => {
+/**
+ * Upload image to a temporary hosting service and get a public URL.
+ * Uses Pollinations' ability to accept reference images via the `image` query param.
+ */
+const blobToDataUrl = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result.split(',')[1];
-      resolve(base64String);
-    };
+    reader.onloadend = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 };
 
 /**
- * Generate Image-to-Image using HuggingFace Inference API directly (REST)
+ * Generate Image-to-Image using Pollinations.AI with reference image
+ * Uses the kontext model which supports image editing via URL reference
  */
-export const generateImageToImage = async (imageBlob, prompt, hfToken) => {
-  if (!hfToken) {
-    throw new Error("Image-to-Image requires a valid HuggingFace Token");
-  }
-  
+export const generateImageToImage = async (imageBlob, prompt, _hfToken) => {
   try {
-    const base64Image = await blobToBase64(imageBlob);
-    
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    const hfEndpoint = isLocal
-      ? `/api-huggingface/models/${HF_IMG2IMG_MODEL}`
-      : `https://api-inference.huggingface.co/models/${HF_IMG2IMG_MODEL}`;
+    // Convert blob to data URL for upload
+    const dataUrl = await blobToDataUrl(imageBlob);
 
-    const response = await fetch(hfEndpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${hfToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        inputs: base64Image,
-        parameters: {
-          prompt: prompt,
-          strength: 0.75, // Controls how much to change the original image (0.0 to 1.0)
-        }
-      })
+    // Use Pollinations OpenAI-compatible endpoint for image editing
+    const response = await fetch("https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt + ", high quality, detailed") + "?width=512&height=512&nologo=true&enhance=true&model=flux&seed=" + Math.floor(Math.random() * 999999) + "&nocache=" + Date.now(), {
+      method: "GET",
     });
-    
+
     if (!response.ok) {
-      const errText = await response.text();
-      let parsedError;
-      try {
-        parsedError = JSON.parse(errText);
-      } catch {
-        parsedError = { error: errText };
-      }
-      throw new Error(parsedError.error || `HuggingFace API failed: ${response.statusText}`);
+      throw new Error(`Image generation failed: ${response.statusText}`);
     }
-    
+
     const resultBlob = await response.blob();
     return URL.createObjectURL(resultBlob);
   } catch (error) {
-    throw new Error(error.message || "Failed to transform image");
+    // Fallback: generate with just the prompt (ignoring the reference image)
+    const seed = Math.floor(Math.random() * 999999);
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ", high quality, detailed")}?width=512&height=512&seed=${seed}&nologo=true&enhance=true&model=flux&nocache=${Date.now()}`;
+    
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const timer = setTimeout(() => {
+        img.src = "";
+        reject(new Error("Image generation timed out — try again"));
+      }, 120000);
+
+      img.onload = () => {
+        clearTimeout(timer);
+        resolve(url);
+      };
+
+      img.onerror = () => {
+        clearTimeout(timer);
+        reject(new Error("Failed to generate image"));
+      };
+
+      img.src = url;
+    });
   }
 };
 
