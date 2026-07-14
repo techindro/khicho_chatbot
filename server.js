@@ -25,9 +25,13 @@ app.post("/api/runway/generate", async (req, res) => {
   }
 
   try {
+    const finalPrompt = imageBase64 
+      ? `a detailed portrait photo of @ref, styled as: ${prompt}, preserving the exact facial features, hair, head pose, and expression of @ref`
+      : prompt;
+
     const payload = {
       model: "gen4_image",
-      promptText: imageBase64 ? `@ref styled as ${prompt}` : prompt,
+      promptText: finalPrompt,
       ratio,
       referenceImages: imageBase64 ? [{ uri: imageBase64, tag: "ref" }] : []
     };
@@ -92,7 +96,11 @@ app.post("/api/pollinations/generate", async (req, res) => {
   console.log(`[pollinations] generating: ${prompt.slice(0, 40)}... hasImage=${!!imageBase64}`);
 
   try {
-    const baseUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
+    const finalPrompt = imageBase64
+      ? `a detailed portrait photo of the person, styled as: ${prompt}, preserving the exact facial features, hair, head pose, and expression of the person`
+      : prompt;
+
+    const baseUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}`;
     const queryParams = new URLSearchParams({
       width: width.toString(),
       height: height.toString(),
