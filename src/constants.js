@@ -1,14 +1,14 @@
 export const STYLES = [
-  { id: "ghibli", label: "Ghibli", icon: "🌿", color: "#4ade80", tag: "studio ghibli anime art style, miyazaki, painterly, lush, dreamy" },
-  { id: "cartoon", label: "Cartoon", icon: "🎨", color: "#fb923c", tag: "cartoon style, vibrant colors, bold outlines, animated, playful" },
-  { id: "realistic", label: "Realistic", icon: "📷", color: "#60a5fa", tag: "hyperrealistic photography, 8k uhd, photorealistic, DSLR, sharp detail" },
-  { id: "anime", label: "Anime", icon: "⚡", color: "#f472b6", tag: "anime art style, manga, detailed, cel shading, japanese animation" },
-  { id: "cyberpunk", label: "Cyberpunk", icon: "🌃", color: "#22d3ee", tag: "cyberpunk aesthetic, neon lights, futuristic city, dark dystopian, rain" },
-  { id: "watercolor", label: "Watercolor", icon: "🎭", color: "#a78bfa", tag: "watercolor painting, soft brushstrokes, artistic, pastel, painterly" },
-  { id: "3d", label: "3D Render", icon: "💎", color: "#34d399", tag: "3d render, octane render, cinema4d, glossy, volumetric lighting, ultra detailed" },
-  { id: "oilpaint", label: "Oil Paint", icon: "🖼️", color: "#fbbf24", tag: "oil painting, classical art, baroque, rich textures, museum quality" },
-  { id: "pixel", label: "Pixel Art", icon: "👾", color: "#f87171", tag: "pixel art, retro game style, 16-bit, pixelated, sprite art" },
-  { id: "fantasy", label: "Fantasy", icon: "🐉", color: "#c084fc", tag: "epic fantasy digital art, magical, ethereal glow, DnD concept art" },
+  { id: "ghibli", label: "Ghibli", lucideName: "Sprout", color: "#4ade80", tag: "studio ghibli anime art style, miyazaki, painterly, lush, dreamy" },
+  { id: "cartoon", label: "Cartoon", lucideName: "Palette", color: "#fb923c", tag: "cartoon style, vibrant colors, bold outlines, animated, playful" },
+  { id: "realistic", label: "Realistic", lucideName: "Camera", color: "#60a5fa", tag: "hyperrealistic photography, 8k uhd, photorealistic, DSLR, sharp detail" },
+  { id: "anime", label: "Anime", lucideName: "Zap", color: "#f472b6", tag: "anime art style, manga, detailed, cel shading, japanese animation" },
+  { id: "cyberpunk", label: "Cyberpunk", lucideName: "Cpu", color: "#22d3ee", tag: "cyberpunk aesthetic, neon lights, futuristic city, dark dystopian, rain" },
+  { id: "watercolor", label: "Watercolor", lucideName: "Brush", color: "#a78bfa", tag: "watercolor painting, soft brushstrokes, artistic, pastel, painterly" },
+  { id: "3d", label: "3D Render", lucideName: "Box", color: "#34d399", tag: "3d render, octane render, cinema4d, glossy, volumetric lighting, ultra detailed" },
+  { id: "oilpaint", label: "Oil Paint", lucideName: "Image", color: "#fbbf24", tag: "oil painting, classical art, baroque, rich textures, museum quality" },
+  { id: "pixel", label: "Pixel Art", lucideName: "Gamepad2", color: "#f87171", tag: "pixel art, retro game style, 16-bit, pixelated, sprite art" },
+  { id: "fantasy", label: "Fantasy", lucideName: "Wand", color: "#c084fc", tag: "epic fantasy digital art, magical, ethereal glow, DnD concept art" },
 ];
 
 export const HERO_PROMPTS = [

@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { downloadImage } from "@utils/imageGen";
 import { STYLES } from "../constants";
+import {
+  AlertTriangle, Clock, Sprout, Palette, Camera, Zap, Cpu, Brush, Box, Image, Gamepad2, Wand
+} from "lucide-react";
+
+const renderStyleIcon = (lucideName) => {
+  const iconMap = {
+    Sprout, Palette, Camera, Zap, Cpu, Brush, Box, Image, Gamepad2, Wand
+  };
+  const IconComponent = iconMap[lucideName] || Image;
+  return <IconComponent size={12} />;
+};
 
 export default function ImageCard({ item, onDelete, onImageClick }) {
   const [hov, setHov] = useState(false);
@@ -63,8 +74,9 @@ export default function ImageCard({ item, onDelete, onImageClick }) {
             display: "inline-flex", alignItems: "center", gap: "4px",
             background: "var(--accent-bg)", color: "var(--accent)", fontSize: "11px",
             padding: "3px 10px", borderRadius: "9999px", fontWeight: 500,
-          }}>{style?.icon} {style?.label}</span>
-          <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>
+          }}>{renderStyleIcon(style?.lucideName)} {style?.label}</span>
+          <span style={{ color: "var(--text-muted)", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            <Clock size={10} />
             {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
@@ -85,7 +97,7 @@ export default function ImageCard({ item, onDelete, onImageClick }) {
           alignItems: "center", justifyContent: "center", gap: "10px",
           padding: "20px", background: "rgba(239, 68, 68, 0.05)",
         }}>
-          <span style={{ fontSize: "28px" }}>⚠️</span>
+          <AlertTriangle size={28} style={{ color: "var(--error)" }} />
           <p style={{ color: "var(--error)", fontSize: "13px", textAlign: "center", margin: 0, lineHeight: 1.5 }}>
             {item.error}
           </p>
@@ -119,7 +131,7 @@ export default function ImageCard({ item, onDelete, onImageClick }) {
           alignItems: "center", justifyContent: "center", gap: "10px",
           padding: "20px", background: "rgba(239, 68, 68, 0.05)",
         }}>
-          <span style={{ fontSize: "28px" }}>⚠️</span>
+          <AlertTriangle size={28} style={{ color: "var(--error)" }} />
           <p style={{ color: "var(--error)", fontSize: "13px", textAlign: "center", margin: 0 }}>
             Image failed to load
           </p>

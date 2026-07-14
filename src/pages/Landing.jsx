@@ -3,7 +3,7 @@ import Logo from "@components/logo";
 import LazyImg from "@components/Lazylmg";
 import { HERO_PROMPTS, HIGHLIGHTS } from "../constants";
 import { buildImageUrl } from "@utils/imageGen";
-import { Sun, Moon, Zap, Palette, Shield, Download, Infinity, Smartphone } from "lucide-react";
+import { Sun, Moon, Zap, Palette, Shield, Download, Infinity, Smartphone, Heart } from "lucide-react";
 
 export default function Landing({ onLogin, onSignup, theme, toggleTheme, onPricingClick }) {
   const [scrolled, setScrolled] = useState(false);
@@ -281,7 +281,7 @@ export default function Landing({ onLogin, onSignup, theme, toggleTheme, onPrici
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
             <span style={{ color: "var(--text-muted)", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
-              Designed & Developed with ❤️ in India
+              Designed & Developed with <Heart size={12} fill="#ef4444" style={{ color: "#ef4444", display: "inline-block", margin: "0 2px", verticalAlign: "middle" }} /> in India
             </span>
           </div>
         </div>

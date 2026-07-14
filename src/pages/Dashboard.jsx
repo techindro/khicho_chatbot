@@ -5,8 +5,17 @@ import { STYLES, SUGGESTIONS } from "../constants";
 import { createImageJob, validatePrompt, generateImage, generateImageToImage, buildPrompt, downloadImage } from "@utils/imageGen";
 import {
   Home, Compass, Sparkles, Archive, ImagePlus, X, LogOut, Sun, Moon, Settings2, CreditCard,
-  Film, Play, Pause, RefreshCw, Volume2, Download, Copy, Dices, Wand2, Square, Tv, Smartphone, Image
+  Film, Play, Pause, RefreshCw, Volume2, Download, Copy, Dices, Wand2, Square, Tv, Smartphone, Image,
+  Sprout, Palette, Camera, Zap, Cpu, Brush, Box, Gamepad2, Wand, Lightbulb, Globe
 } from "lucide-react";
+
+const renderStyleIcon = (lucideName) => {
+  const iconMap = {
+    Sprout, Palette, Camera, Zap, Cpu, Brush, Box, Image, Gamepad2, Wand
+  };
+  const IconComponent = iconMap[lucideName] || Image;
+  return <IconComponent size={14} />;
+};
 
 const ENHANCERS = {
   realistic: [
@@ -992,13 +1001,13 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                 </label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {[
-                    { id: "hi-female", label: "Hindi Female", desc: "Kalpana / Google हिन्दी", flag: "🇮🇳" },
-                    { id: "hi-male", label: "Hindi Male", desc: "Hemant / Hari Accent", flag: "🇮🇳" },
-                    { id: "in-female", label: "Indian English Female", desc: "Heera / Swara Accent", flag: "🇮🇳" },
-                    { id: "in-male", label: "Indian English Male", desc: "Ravi Accent", flag: "🇮🇳" },
-                    { id: "us-female", label: "US Female", desc: "Zira / Jenny Accent", flag: "🇺🇸" },
-                    { id: "us-male", label: "US Male", desc: "David Accent", flag: "🇺🇸" },
-                    { id: "bhojpuri", label: "Bhojpuri Bhaiya", desc: "Bhojpuri Script Dialect", flag: "🌾" }
+                    { id: "hi-female", label: "Hindi Female", desc: "Kalpana / Google हिन्दी" },
+                    { id: "hi-male", label: "Hindi Male", desc: "Hemant / Hari Accent" },
+                    { id: "in-female", label: "Indian English Female", desc: "Heera / Swara Accent" },
+                    { id: "in-male", label: "Indian English Male", desc: "Ravi Accent" },
+                    { id: "us-female", label: "US Female", desc: "Zira / Jenny Accent" },
+                    { id: "us-male", label: "US Male", desc: "David Accent" },
+                    { id: "bhojpuri", label: "Bhojpuri Bhaiya", desc: "Bhojpuri Script Dialect" }
                   ].map((char) => (
                     <button
                       key={char.id}
@@ -1021,7 +1030,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                         transition: "all 0.2s"
                       }}
                     >
-                      <span style={{ fontSize: "18px" }}>{char.flag}</span>
+                      <Globe size={16} style={{ color: "var(--accent)" }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: "13px", fontWeight: 600 }}>{char.label}</div>
                         <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px" }}>{char.desc}</div>
@@ -1042,7 +1051,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                 color: "var(--text-muted)",
                 lineHeight: 1.5
               }}>
-                <strong>💡 Tip:</strong> You can edit the text inside the timeline cards to change the voice narration! Click any card to preview that scene.
+                <strong style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Lightbulb size={12} style={{ color: "var(--accent)" }} /> Tip:</strong> You can edit the text inside the timeline cards to change the voice narration! Click any card to preview that scene.
               </div>
             </div>
           </div>
@@ -1115,8 +1124,9 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                       key={s.id}
                       className={`mj-prompt-btn ${style === s.id ? "active" : ""}`}
                       onClick={() => setStyle(s.id)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
                     >
-                      {s.icon} {s.label}
+                      {renderStyleIcon(s.lucideName)} {s.label}
                     </button>
                   ))}
                 </div>
