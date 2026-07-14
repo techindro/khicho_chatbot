@@ -17,6 +17,48 @@ const renderStyleIcon = (lucideName) => {
   return <IconComponent size={14} />;
 };
 
+const applyConvolution = (img, kernel) => {
+  try {
+    const canvas = document.createElement("canvas");
+    const tempCtx = canvas.getContext("2d");
+    canvas.width = 128;
+    canvas.height = 128;
+    tempCtx.drawImage(img, 0, 0, 128, 128);
+
+    const imgData = tempCtx.getImageData(0, 0, 128, 128);
+    const src = imgData.data;
+    const output = tempCtx.createImageData(128, 128);
+    const dst = output.data;
+    const w = 128;
+    const h = 128;
+
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        let r = 0, g = 0, b = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const pixelIdx = ((y + ky) * w + (x + kx)) * 4;
+            const weight = kernel[(ky + 1) * 3 + (kx + 1)];
+            r += src[pixelIdx] * weight;
+            g += src[pixelIdx + 1] * weight;
+            b += src[pixelIdx + 2] * weight;
+          }
+        }
+        const dstIdx = (y * w + x) * 4;
+        dst[dstIdx] = Math.min(Math.max(r, 0), 255);
+        dst[dstIdx + 1] = Math.min(Math.max(g, 0), 255);
+        dst[dstIdx + 2] = Math.min(Math.max(b, 0), 255);
+        dst[dstIdx + 3] = 255;
+      }
+    }
+    tempCtx.putImageData(output, 0, 0);
+    return canvas.toDataURL("image/jpeg");
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+};
+
 const ENHANCERS = {
   realistic: [
     "cinematic lighting, volumetric atmosphere, highly detailed, 8k resolution, photorealistic, shot on 35mm lens",
@@ -194,6 +236,41 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
   const [captionSize, setCaptionSize] = useState(20);
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [videoAspectRatio, setVideoAspectRatio] = useState("16:9");
+
+  // CNN Local Simulation States
+  const [showCnnModal, setShowCnnModal] = useState(false);
+  const [cnnFeatures, setCnnFeatures] = useState({ edge: null, ridge: null, sharpen: null });
+
+  const runCnnSimulation = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const edgeKernel = [
+          -1, -1, -1,
+          -1,  8, -1,
+          -1, -1, -1
+        ];
+        const ridgeKernel = [
+          -1,  0,  1,
+          -2,  0,  2,
+          -1,  0,  1
+        ];
+        const sharpenKernel = [
+           0, -1,  0,
+          -1,  5, -1,
+           0, -1,  0
+        ];
+
+        const edge = applyConvolution(img, edgeKernel);
+        const ridge = applyConvolution(img, ridgeKernel);
+        const sharpen = applyConvolution(img, sharpenKernel);
+        setCnnFeatures({ edge, ridge, sharpen });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Load system voices for speech synthesis
   useEffect(() => {
@@ -493,6 +570,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
       if (file.size > 5 * 1024 * 1024) return setError("Image must be under 5MB");
       setUploadedImage(file);
       setError("");
+      runCnnSimulation(file);
     }
   };
 
@@ -1063,22 +1141,31 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
         <div className="mj-prompt-dock animate-slide-up">
         <div className="mj-prompt-bar">
           {uploadedImage && (
-            <div style={{ position: "relative", display: "inline-block", marginBottom: 10 }}>
-              <img
-                src={URL.createObjectURL(uploadedImage)}
-                alt="Reference"
-                style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
-              />
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: 10 }}>
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img
+                  src={URL.createObjectURL(uploadedImage)}
+                  alt="Reference"
+                  style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                />
+                <button
+                  onClick={() => setUploadedImage(null)}
+                  style={{
+                    position: "absolute", top: -6, right: -6,
+                    width: 18, height: 18, borderRadius: "50%",
+                    background: "var(--surface)", border: "1px solid var(--border)",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "var(--text-muted)",
+                  }}
+                ><X size={10} /></button>
+              </div>
               <button
-                onClick={() => setUploadedImage(null)}
-                style={{
-                  position: "absolute", top: -6, right: -6,
-                  width: 18, height: 18, borderRadius: "50%",
-                  background: "var(--surface)", border: "1px solid var(--border)",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "var(--text-muted)",
-                }}
-              ><X size={10} /></button>
+                onClick={() => setShowCnnModal(true)}
+                className="mj-prompt-btn"
+                style={{ height: "36px", padding: "0 12px", display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", color: "var(--accent)" }}
+              >
+                <Cpu size={14} /> CNN Feature Inspector
+              </button>
             </div>
           )}
 
@@ -1352,6 +1439,128 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CNN Feature Inspector Modal */}
+      {showCnnModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1100,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.85)", backdropFilter: "blur(10px)",
+          padding: "20px"
+        }}>
+          <div style={{
+            width: "min(1000px, 95vw)", maxHeight: "90vh",
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: "24px", padding: "32px", position: "relative",
+            overflowY: "auto", display: "flex", flexDirection: "column", gap: "24px"
+          }}>
+            <button
+              onClick={() => setShowCnnModal(false)}
+              style={{
+                position: "absolute", top: "20px", right: "20px",
+                width: "36px", height: "36px", borderRadius: "50%",
+                background: "var(--bg-secondary)", border: "1px solid var(--border)",
+                color: "var(--text-muted)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}
+            >
+              <X size={16} />
+            </button>
+
+            <div>
+              <span style={{
+                fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px",
+                color: "var(--accent)", background: "var(--accent-bg)",
+                padding: "4px 10px", borderRadius: "9999px", fontWeight: 600,
+                display: "inline-block", marginBottom: "12px"
+              }}>
+                Local Computer Vision Simulation
+              </span>
+              <h2 style={{ fontSize: "24px", color: "var(--text-primary)", fontWeight: 500, margin: 0 }}>
+                CNN Feature Maps
+              </h2>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "6px" }}>
+                This inspector visualizes the spatial features extracted by the first convolutional layers of a Convolutional Neural Network (CNN) in real-time.
+              </p>
+            </div>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "20px"
+            }}>
+              {/* Original */}
+              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Original Image</h3>
+                <img
+                  src={URL.createObjectURL(uploadedImage)}
+                  alt="Original"
+                  style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                />
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Raw input pixel matrix fed to the visual encoder.</p>
+              </div>
+
+              {/* Layer 1 */}
+              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 1: Edge Map</h3>
+                {cnnFeatures.edge ? (
+                  <img
+                    src={cnnFeatures.edge}
+                    alt="Edges"
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                )}
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Sobel kernel (Laplacian approximation) highlighting structural borders.</p>
+              </div>
+
+              {/* Layer 2 */}
+              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 2: Ridge Map</h3>
+                {cnnFeatures.ridge ? (
+                  <img
+                    src={cnnFeatures.ridge}
+                    alt="Ridges"
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                )}
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Ridge detector highlighting textures and pattern gradients.</p>
+              </div>
+
+              {/* Layer 3 */}
+              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 3: Sharpen Map</h3>
+                {cnnFeatures.sharpen ? (
+                  <img
+                    src={cnnFeatures.sharpen}
+                    alt="Sharpen"
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                )}
+                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>High-pass filter amplifying shape boundaries and contrast contours.</p>
+              </div>
+            </div>
+
+            <div style={{
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: "16px",
+              padding: "20px",
+              fontSize: "12px",
+              color: "var(--text-secondary)",
+              lineHeight: 1.6,
+              textAlign: "left"
+            }}>
+              <strong>How this relates to Diffusion Models & AIML:</strong> Modern generative AI systems (like Flux and Stable Diffusion) do not read raw photos directly. Instead, they use a **Vision Encoder (VAE / CLIP)** consisting of deep Convolutional Neural Networks (CNNs). These CNN layers apply mathematical convolution matrices (kernels) — identical to the ones simulated above — to convert the input photo into spatial feature maps. This extracted structural data is what guides the diffusion process to preserve your face and posture.
             </div>
           </div>
         </div>
