@@ -176,11 +176,15 @@ export const buildImageUrl = (p, s, w = 512, h = 512) =>
 
 export const downloadImage = async (url, filename = "download.jpg") => {
   try {
+    const link = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
     const a = document.createElement("a");
-    a.href = url;
+    a.href = link;
     a.download = filename;
+    document.body.appendChild(a);
     a.click();
-  } catch {
+    document.body.removeChild(a);
+  } catch (err) {
+    console.error("Proxy download failed, trying direct link:", err);
     window.open(url, "_blank");
   }
 };

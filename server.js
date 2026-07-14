@@ -156,6 +156,27 @@ app.post("/api/pollinations/generate", async (req, res) => {
   }
 });
 
+app.get("/api/download", async (req, res) => {
+  const { url, filename = "download.jpg" } = req.query;
+  if (!url) return res.status(400).send("Missing URL");
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch image");
+
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", contentType);
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return res.send(buffer);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("Download failed");
+  }
+});
+
 // serve static build
 const dist = path.join(__dirname, "dist");
 app.use(express.static(dist));
