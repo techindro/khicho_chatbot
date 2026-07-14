@@ -40,7 +40,7 @@ app.post("/api/runway/generate", async (req, res) => {
     // Step 1: Submit the task
     const taskBody = {
       model: "gen4_image",
-      promptText: imageBase64 ? `${prompt} @ref` : prompt,
+      promptText: imageBase64 ? `@ref styled as ${prompt}` : prompt,
       ratio: ratio,
       referenceImages: imageBase64 ? [
         {
