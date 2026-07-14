@@ -1,0 +1,10 @@
+services:
+  - type: static
+    name: khicho-chatbot
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      # SPA rewrite rule to route all frontend paths to index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
