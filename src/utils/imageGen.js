@@ -52,13 +52,8 @@ export const generateImageToImage = async (imageBlob, prompt, _hfToken, aspectRa
     const result = await response.json();
     return result.url;
   } catch (error) {
-    console.error("RunwayML generation failed, falling back to Pollinations:", error);
-    // Fallback: generate with just the prompt using Pollinations
-    const seed = Math.floor(Math.random() * 999999);
-    const { width, height } = getDimensionsFromAspectRatio(aspectRatio);
-    const url = buildPollinationsUrl(prompt, seed, width, height);
-    
-    return await verifyAndGetUrl(url);
+    console.error("RunwayML generation failed:", error);
+    throw error;
   }
 };
 
