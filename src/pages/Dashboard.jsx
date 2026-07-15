@@ -1724,7 +1724,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                     ))}
                   </div>
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "12px", lineHeight: "1.4" }}>
-                    {yoloScanning ? "Neural layers sweeping image tensor grids..." : "Confidence threshold metric >= 80% matches."}
+                    {yoloScanning ? "Scanning image data..." : "Objects matching threshold criteria shown above."}
                   </p>
                 </div>
 
@@ -1740,7 +1740,7 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                       {yoloScanning ? (
                         <div style={{ color: "var(--text-muted)", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
-                          <RefreshCw size={14} className="animate-spin" /> Localizing objects in bounding boxes...
+                          <RefreshCw size={14} className="animate-spin" /> Analyzing image pixels...
                         </div>
                       ) : (
                         getMockYoloDetections(prompt).map((det, index) => (
@@ -1778,13 +1778,13 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                     lineHeight: 1.6,
                     color: "var(--text-secondary)"
                   }}>
-                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "8px" }}>What is YOLO? (SOTA Detector)</h3>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "8px" }}>How does YOLO work?</h3>
                     <p style={{ margin: 0 }}>
-                      <strong>YOLO (You Only Look Once)</strong> is a State-of-the-Art (SOTA) real-time object detection architecture. 
-                      Unlike classic classifiers that scan images multiple times at various scales, YOLO evaluates the entire image in a single pass of a deep neural network, splitting it into grids and predicting bounding boxes and class probabilities simultaneously. 
+                      <strong>YOLO (You Only Look Once)</strong> is an algorithm designed for real-time object detection. 
+                      Instead of dividing the image and running classifiers on different regions, it runs the entire image through a single neural network pass. This allows the system to predict bounding boxes and labels all at once.
                     </p>
                     <p style={{ marginTop: "10px", marginBottom: 0 }}>
-                      It allows applications to run at extremely high speeds (45+ frames per second) with state-of-the-art precision, making it the industry benchmark for computer vision systems.
+                      This single-pass approach is highly efficient, allowing it to perform object detection at fast frame rates on video or live camera feeds.
                     </p>
                   </div>
                 </div>
