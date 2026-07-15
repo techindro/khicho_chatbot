@@ -237,14 +237,66 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [videoAspectRatio, setVideoAspectRatio] = useState("16:9");
 
-  // CNN Local Simulation States
+  // CNN/YOLO Local Simulation States
   const [showCnnModal, setShowCnnModal] = useState(false);
+  const [visionLabTab, setVisionLabTab] = useState("cnn"); // "cnn" | "yolo"
+  const [yoloScanning, setYoloScanning] = useState(false);
   const [cnnFeatures, setCnnFeatures] = useState({ edge: null, ridge: null, sharpen: null });
+
+  // Trigger scanning animation when switching to YOLO tab
+  useEffect(() => {
+    if (visionLabTab === "yolo" && showCnnModal) {
+      setYoloScanning(true);
+      const timer = setTimeout(() => {
+        setYoloScanning(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [visionLabTab, showCnnModal]);
+
+  const getMockYoloDetections = (promptText) => {
+    const text = (promptText || "").toLowerCase();
+    const detections = [];
+
+    if (text.includes("man") || text.includes("boy") || text.includes("guy") || text.includes("gentleman") || text.includes("male")) {
+      detections.push({ label: "Person", confidence: 97.8, color: "#10b981", bbox: { left: "20%", top: "15%", width: "60%", height: "80%" } });
+      detections.push({ label: "Face", confidence: 99.2, color: "#06b6d4", bbox: { left: "40%", top: "20%", width: "20%", height: "25%" } });
+      if (text.includes("glass") || text.includes("specs")) {
+        detections.push({ label: "Eyewear", confidence: 91.5, color: "#f43f5e", bbox: { left: "42%", top: "23%", width: "16%", height: "8%" } });
+      }
+    } else if (text.includes("woman") || text.includes("girl") || text.includes("lady") || text.includes("female")) {
+      detections.push({ label: "Person", confidence: 98.4, color: "#10b981", bbox: { left: "20%", top: "15%", width: "60%", height: "80%" } });
+      detections.push({ label: "Face", confidence: 99.5, color: "#06b6d4", bbox: { left: "40%", top: "20%", width: "20%", height: "25%" } });
+      if (text.includes("glass") || text.includes("specs")) {
+        detections.push({ label: "Eyewear", confidence: 92.1, color: "#f43f5e", bbox: { left: "42%", top: "23%", width: "16%", height: "8%" } });
+      }
+    } else if (text.includes("cat") || text.includes("kitten") || text.includes("kitty")) {
+      detections.push({ label: "Cat", confidence: 96.5, color: "#eab308", bbox: { left: "25%", top: "35%", width: "50%", height: "55%" } });
+    } else if (text.includes("dog") || text.includes("puppy") || text.includes("hound")) {
+      detections.push({ label: "Dog", confidence: 95.8, color: "#eab308", bbox: { left: "25%", top: "35%", width: "50%", height: "55%" } });
+    } else if (text.includes("car") || text.includes("auto") || text.includes("vehicle") || text.includes("truck")) {
+      detections.push({ label: "Car", confidence: 89.7, color: "#8b5cf6", bbox: { left: "10%", top: "40%", width: "80%", height: "50%" } });
+    } else if (text.includes("laptop") || text.includes("computer") || text.includes("screen")) {
+      detections.push({ label: "Laptop", confidence: 94.2, color: "#3b82f6", bbox: { left: "25%", top: "35%", width: "50%", height: "45%" } });
+    } else {
+      detections.push({ label: "Main Subject", confidence: 95.2, color: "#10b981", bbox: { left: "15%", top: "15%", width: "70%", height: "70%" } });
+      detections.push({ label: "Foreground Object", confidence: 88.4, color: "#06b6d4", bbox: { left: "30%", top: "45%", width: "40%", height: "40%" } });
+    }
+
+    if (text.includes("tree") || text.includes("forest") || text.includes("plant") || text.includes("nature")) {
+      detections.push({ label: "Tree", confidence: 85.3, color: "#10b981", bbox: { left: "5%", top: "5%", width: "30%", height: "75%" } });
+    }
+    if (text.includes("mountain") || text.includes("hill") || text.includes("peak")) {
+      detections.push({ label: "Mountain Range", confidence: 91.9, color: "#6b7280", bbox: { left: "0%", top: "20%", width: "100%", height: "50%" } });
+    }
+
+    return detections;
+  };
 
   const runCnnSimulation = (file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const edgeKernel = [
           -1, -1, -1,
@@ -1160,11 +1212,14 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                 ><X size={10} /></button>
               </div>
               <button
-                onClick={() => setShowCnnModal(true)}
+                onClick={() => {
+                  setVisionLabTab("cnn");
+                  setShowCnnModal(true);
+                }}
                 className="mj-prompt-btn"
                 style={{ height: "36px", padding: "0 12px", display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.2)", color: "var(--accent)" }}
               >
-                <Cpu size={14} /> CNN Feature Inspector
+                <Cpu size={14} /> AI Vision Lab (CNN & YOLO)
               </button>
             </div>
           )}
@@ -1478,90 +1533,263 @@ export default function Dashboard({ user, hfToken, ideogramApiKey, currentTier, 
                 padding: "4px 10px", borderRadius: "9999px", fontWeight: 600,
                 display: "inline-block", marginBottom: "12px"
               }}>
-                Local Computer Vision Simulation
+                {visionLabTab === "cnn" ? "Local Computer Vision Simulation" : "SOTA Spatial Annotation"}
               </span>
               <h2 style={{ fontSize: "24px", color: "var(--text-primary)", fontWeight: 500, margin: 0 }}>
-                CNN Feature Maps
+                {visionLabTab === "cnn" ? "CNN Feature Maps" : "YOLO Real-time Object Detection"}
               </h2>
               <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "6px" }}>
-                This inspector visualizes the spatial features extracted by the first convolutional layers of a Convolutional Neural Network (CNN) in real-time.
+                {visionLabTab === "cnn" 
+                  ? "This inspector visualizes the spatial features extracted by the first convolutional layers of a Convolutional Neural Network (CNN) in real-time."
+                  : "This simulation demonstrates State-of-the-Art (SOTA) real-time spatial annotation and object bounding box localization."}
               </p>
             </div>
 
+            {/* Segmented Control Tabs */}
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "20px"
-            }}>
-              {/* Original */}
-              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Original Image</h3>
-                <img
-                  src={URL.createObjectURL(uploadedImage)}
-                  alt="Original"
-                  style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
-                />
-                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Raw input pixel matrix fed to the visual encoder.</p>
-              </div>
-
-              {/* Layer 1 */}
-              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 1: Edge Map</h3>
-                {cnnFeatures.edge ? (
-                  <img
-                    src={cnnFeatures.edge}
-                    alt="Edges"
-                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
-                  />
-                ) : (
-                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
-                )}
-                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Sobel kernel (Laplacian approximation) highlighting structural borders.</p>
-              </div>
-
-              {/* Layer 2 */}
-              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 2: Ridge Map</h3>
-                {cnnFeatures.ridge ? (
-                  <img
-                    src={cnnFeatures.ridge}
-                    alt="Ridges"
-                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
-                  />
-                ) : (
-                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
-                )}
-                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Ridge detector highlighting textures and pattern gradients.</p>
-              </div>
-
-              {/* Layer 3 */}
-              <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
-                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 3: Sharpen Map</h3>
-                {cnnFeatures.sharpen ? (
-                  <img
-                    src={cnnFeatures.sharpen}
-                    alt="Sharpen"
-                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
-                  />
-                ) : (
-                  <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
-                )}
-                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>High-pass filter amplifying shape boundaries and contrast contours.</p>
-              </div>
-            </div>
-
-            <div style={{
+              display: "flex",
               background: "var(--bg-secondary)",
               border: "1px solid var(--border)",
-              borderRadius: "16px",
-              padding: "20px",
-              fontSize: "12px",
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-              textAlign: "left"
+              borderRadius: "12px",
+              padding: "4px",
+              alignSelf: "flex-start"
             }}>
-              <strong>How this relates to Diffusion Models & AIML:</strong> Modern generative AI systems (like Flux and Stable Diffusion) do not read raw photos directly. Instead, they use a **Vision Encoder (VAE / CLIP)** consisting of deep Convolutional Neural Networks (CNNs). These CNN layers apply mathematical convolution matrices (kernels) — identical to the ones simulated above — to convert the input photo into spatial feature maps. This extracted structural data is what guides the diffusion process to preserve your face and posture.
+              <button
+                onClick={() => setVisionLabTab("cnn")}
+                style={{
+                  padding: "8px 16px",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  transition: "all 0.15s",
+                  background: visionLabTab === "cnn" ? "var(--accent)" : "transparent",
+                  color: visionLabTab === "cnn" ? "white" : "var(--text-secondary)"
+                }}
+              >
+                CNN Feature Maps
+              </button>
+              <button
+                onClick={() => setVisionLabTab("yolo")}
+                style={{
+                  padding: "8px 16px",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "12px",
+                  transition: "all 0.15s",
+                  background: visionLabTab === "yolo" ? "var(--accent)" : "transparent",
+                  color: visionLabTab === "yolo" ? "white" : "var(--text-secondary)"
+                }}
+              >
+                YOLO Detector (SOTA)
+              </button>
             </div>
+
+            {visionLabTab === "cnn" ? (
+              <>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                  gap: "20px"
+                }}>
+                  {/* Original */}
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Original Image</h3>
+                    <img
+                      src={URL.createObjectURL(uploadedImage)}
+                      alt="Original"
+                      style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                    />
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Raw input pixel matrix fed to the visual encoder.</p>
+                  </div>
+
+                  {/* Layer 1 */}
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 1: Edge Map</h3>
+                    {cnnFeatures.edge ? (
+                      <img
+                        src={cnnFeatures.edge}
+                        alt="Edges"
+                        style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                    )}
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Sobel kernel (Laplacian approximation) highlighting structural borders.</p>
+                  </div>
+
+                  {/* Layer 2 */}
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 2: Ridge Map</h3>
+                    {cnnFeatures.ridge ? (
+                      <img
+                        src={cnnFeatures.ridge}
+                        alt="Ridges"
+                        style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                    )}
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>Ridge detector highlighting textures and pattern gradients.</p>
+                  </div>
+
+                  {/* Layer 3 */}
+                  <div style={{ background: "var(--bg-secondary)", borderRadius: "16px", padding: "16px", border: "1px solid var(--border)", textAlign: "center" }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Layer 3: Sharpen Map</h3>
+                    {cnnFeatures.sharpen ? (
+                      <img
+                        src={cnnFeatures.sharpen}
+                        alt="Sharpen"
+                        style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--border)" }}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", aspectRatio: "1", background: "var(--surface)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontSize: "12px" }}>Processing...</div>
+                    )}
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>High-pass filter amplifying shape boundaries and contrast contours.</p>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  fontSize: "12px",
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.6,
+                  textAlign: "left"
+                }}>
+                  <strong>How this relates to Diffusion Models & AIML:</strong> Modern generative AI systems (like Flux and Stable Diffusion) do not read raw photos directly. Instead, they use a **Vision Encoder (VAE / CLIP)** consisting of deep Convolutional Neural Networks (CNNs). These CNN layers apply mathematical convolution matrices (kernels) — identical to the ones simulated above — to convert the input photo into spatial feature maps. This extracted structural data is what guides the diffusion process to preserve your face and posture.
+                </div>
+              </>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gap: "28px",
+                alignItems: "start"
+              }}>
+                {/* YOLO Scanner Overlay Container */}
+                <div style={{
+                  position: "relative",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "20px",
+                  padding: "16px",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center"
+                }}>
+                  <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "12px" }}>Scanning Input Frame</h3>
+                  <div style={{
+                    position: "relative",
+                    width: "100%",
+                    aspectRatio: "1",
+                    overflow: "hidden",
+                    borderRadius: "12px",
+                    border: "1px solid var(--border)"
+                  }}>
+                    <img
+                      src={URL.createObjectURL(uploadedImage)}
+                      alt="YOLO Detection Frame"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    {/* Glowing vertical laser scan line */}
+                    {yoloScanning && <div className="yolo-scan-line" />}
+
+                    {/* Bounding boxes (only shown after scanning completes) */}
+                    {!yoloScanning && getMockYoloDetections(prompt).map((det, index) => (
+                      <div
+                        key={index}
+                        className="yolo-bbox"
+                        style={{
+                          left: det.bbox.left,
+                          top: det.bbox.top,
+                          width: det.bbox.width,
+                          height: det.bbox.height,
+                          borderColor: det.color
+                        }}
+                      >
+                        <span
+                          className="yolo-bbox-label"
+                          style={{ background: det.color }}
+                        >
+                          {det.label} {det.confidence}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "12px", lineHeight: "1.4" }}>
+                    {yoloScanning ? "Neural layers sweeping image tensor grids..." : "Confidence threshold metric >= 80% matches."}
+                  </p>
+                </div>
+
+                {/* YOLO Details & Annotations List */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
+                  <div style={{
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "20px",
+                    padding: "20px"
+                  }}>
+                    <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "16px" }}>Detected Entities</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                      {yoloScanning ? (
+                        <div style={{ color: "var(--text-muted)", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <RefreshCw size={14} className="animate-spin" /> Localizing objects in bounding boxes...
+                        </div>
+                      ) : (
+                        getMockYoloDetections(prompt).map((det, index) => (
+                          <div key={index} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontWeight: 600, fontSize: "13px", color: "var(--text-primary)" }}>{det.label}</span>
+                              <span style={{ fontSize: "12px", fontWeight: 700, color: det.color, marginLeft: "auto" }}>{det.confidence}% Confidence</span>
+                            </div>
+                            <div style={{
+                              width: "100%",
+                              height: "6px",
+                              background: "var(--surface)",
+                              borderRadius: "3px",
+                              overflow: "hidden"
+                            }}>
+                              <div style={{
+                                width: `${det.confidence}%`,
+                                height: "100%",
+                                background: det.color,
+                                borderRadius: "3px"
+                              }} />
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "20px",
+                    padding: "20px",
+                    fontSize: "12px",
+                    lineHeight: 1.6,
+                    color: "var(--text-secondary)"
+                  }}>
+                    <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "8px" }}>What is YOLO? (SOTA Detector)</h3>
+                    <p style={{ margin: 0 }}>
+                      <strong>YOLO (You Only Look Once)</strong> is a State-of-the-Art (SOTA) real-time object detection architecture. 
+                      Unlike classic classifiers that scan images multiple times at various scales, YOLO evaluates the entire image in a single pass of a deep neural network, splitting it into grids and predicting bounding boxes and class probabilities simultaneously. 
+                    </p>
+                    <p style={{ marginTop: "10px", marginBottom: 0 }}>
+                      It allows applications to run at extremely high speeds (45+ frames per second) with state-of-the-art precision, making it the industry benchmark for computer vision systems.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

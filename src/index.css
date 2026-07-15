@@ -946,3 +946,62 @@ input:focus, textarea:focus {
 .animate-delay-4 {
   animation-delay: 320ms;
 }
+
+/* YOLO Detector scan and bounding box animations */
+@keyframes yoloScanLine {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+  100% {
+    top: 0%;
+  }
+}
+
+.yolo-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, transparent, #10b981, transparent);
+  box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
+  z-index: 10;
+  animation: yoloScanLine 2.5s ease-in-out infinite;
+}
+
+@keyframes yoloBoxFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.yolo-bbox {
+  position: absolute;
+  border: 2px solid #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4), inset 0 0 8px rgba(16, 185, 129, 0.2);
+  border-radius: 4px;
+  z-index: 5;
+  animation: yoloBoxFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.yolo-bbox-label {
+  position: absolute;
+  top: -22px;
+  left: -2px;
+  background: #10b981;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px 4px 0 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
